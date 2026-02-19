@@ -3,13 +3,26 @@ import Hero from "@/components/home/Hero";
 import ContentCarousel from "@/components/home/ContentCarousel";
 import PlatformFilter from "@/components/home/PlatformFilter";
 import Navbar from "@/components/layout/Navbar";
-import { useContent } from "@/hooks/useContent";
+import { useContent, useInfiniteContent } from "@/hooks/useContent";
 import { getGenreName } from "@/lib/genres";
 import { fetchWebConfig } from "@/lib/firestore";
 
 const Index = () => {
-  const { content, loading } = useContent();
+  // Use paginated content for the main list to avoid loading everything at once
+  const { 
+    data, 
+    isLoading: loadingInfinite,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage
+  } = useInfiniteContent(undefined, 50);
+
+  // Still use useContent for specialized sections if needed, or better, derive from paginated data
+  // For the home sections (estreno, agregado), we might still need a targeted fetch or just use the first page
+  const { content, loading: loadingAll } = useContent();
   const [webConfig, setWebConfig] = useState<any>(null);
+
+  const loading = loadingAll && loadingInfinite;
 
   useEffect(() => {
     fetchWebConfig().then((config) => setWebConfig(config)).catch(console.error);

@@ -1,5 +1,11 @@
-import { useQuery } from "@tanstack/react-query";
-import { fetchAllContent, fetchContentByType, fetchContentById } from "@/lib/firestore";
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
+import { 
+  fetchAllContent, 
+  fetchContentByType, 
+  fetchContentById, 
+  fetchContentPaginated,
+  fetchContentByTypePaginated 
+} from "@/lib/firestore";
 import { fetchTmdbDetails } from "@/lib/tmdb";
 
 export const useContent = (type?: "movie" | "tv") => {
@@ -10,6 +16,19 @@ export const useContent = (type?: "movie" | "tv") => {
   });
 
   return { content, loading, refetch };
+};
+
+export const useInfiniteContent = (type?: "movie" | "tv", pageSize = 20) => {
+  return useInfiniteQuery({
+    queryKey: ["content-infinite", type ?? "all"],
+    queryFn: ({ pageParam }) => 
+      type 
+        ? fetchContentByTypePaginated(type, pageSize, pageParam as any)
+        : fetchContentPaginated(pageSize, pageParam as any),
+    initialPageParam: null,
+    getNextPageParam: (lastPage) => lastPage.lastVisible,
+    staleTime: 5 * 60 * 1000,
+  });
 };
 
 export const useContentDetail = (docId: string | undefined) => {

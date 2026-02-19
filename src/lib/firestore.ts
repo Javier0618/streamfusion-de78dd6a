@@ -62,6 +62,32 @@ export const importContent = async (data: Omit<Content, "docId">, tmdbId: number
 // ---- Content ----
 export const getContentCollection = () => collection(db, "content");
 
+export const fetchContentByTypePaginated = async (
+  type: "movie" | "tv",
+  pageSize: number,
+  lastDoc?: QueryDocumentSnapshot
+): Promise<{ content: Content[]; lastVisible: QueryDocumentSnapshot | null }> => {
+  let q = query(
+    getContentCollection(),
+    where("media_type", "==", type),
+    orderBy("imported_at", "desc"),
+    limit(pageSize)
+  );
+  if (lastDoc) {
+    q = query(
+      getContentCollection(),
+      where("media_type", "==", type),
+      orderBy("imported_at", "desc"),
+      startAfter(lastDoc),
+      limit(pageSize)
+    );
+  }
+  const snap = await getDocs(q);
+  const content = snap.docs.map((d) => ({ ...d.data(), docId: d.id } as Content));
+  const lastVisible = snap.docs[snap.docs.length - 1] || null;
+  return { content, lastVisible };
+};
+
 export const searchContentInFirestore = async (searchText: string): Promise<Content[]> => {
   const all = await fetchAllContent();
   const search = searchText.toLowerCase();
