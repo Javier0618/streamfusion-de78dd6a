@@ -60,9 +60,10 @@ const platforms = [
 interface PlatformFilterProps {
   content: { display_options?: { platforms?: string[] } }[];
   visiblePlatforms?: string[];
+  platformImages?: Record<string, string>;
 }
 
-const PlatformFilter = ({ content, visiblePlatforms }: PlatformFilterProps) => {
+const PlatformFilter = ({ content, visiblePlatforms, platformImages }: PlatformFilterProps) => {
   const navigate = useNavigate();
 
   const availablePlatforms = platforms.filter((p) => {
@@ -90,7 +91,11 @@ const PlatformFilter = ({ content, visiblePlatforms }: PlatformFilterProps) => {
             className="group flex items-center justify-center px-8 md:px-12 py-4 text-muted-foreground hover:text-foreground transition-all duration-300 border-r border-border/30 last:border-r-0 flex-shrink-0"
           >
             <span className="opacity-60 group-hover:opacity-100 transition-opacity duration-300 scale-95 group-hover:scale-100">
-              {platform.logo}
+              {platformImages?.[platform.id] ? (
+                <img src={platformImages[platform.id]} alt={platform.label} className="h-6 md:h-7 object-contain" />
+              ) : (
+                platform.logo
+              )}
             </span>
           </motion.button>
         ))}

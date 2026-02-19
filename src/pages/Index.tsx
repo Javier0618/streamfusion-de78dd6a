@@ -86,7 +86,7 @@ const Index = () => {
       <Hero content={heroContent} allContent={content} />
 
       <div className="relative z-10 pb-16">
-        <PlatformFilter content={content} visiblePlatforms={webConfig?.visiblePlatforms} />
+        <PlatformFilter content={content} visiblePlatforms={webConfig?.visiblePlatforms} platformImages={webConfig?.platformImages} />
         {isCategoryVisible("enEstreno") && enEstreno.length > 0 && <ContentCarousel title="En Estreno/Emisión" items={enEstreno.slice(0, sections.enEstreno)} />}
         {isCategoryVisible("recienAgregado") && recienAgregado.length > 0 && <ContentCarousel title="Recién Agregado" items={recienAgregado.slice(0, sections.recienAgregado)} />}
         {isCategoryVisible("peliculas") && movies.length > 0 && <ContentCarousel title="Películas Populares" items={movies.slice(0, sections.peliculasPopulares)} viewAllLink="/category/movies" />}

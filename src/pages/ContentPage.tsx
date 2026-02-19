@@ -4,6 +4,7 @@ import Navbar from "@/components/layout/Navbar";
 import VideoPlayer from "@/components/content/VideoPlayer";
 import ContentCard from "@/components/home/ContentCard";
 import { Play, ArrowLeft, Star, Calendar, BookmarkPlus, BookmarkCheck } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
 import { getBackdropUrl, getImageUrl } from "@/lib/image";
@@ -21,6 +22,7 @@ const ContentPage = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { content, loading } = useContentDetail(docId);
+  const isMobile = useIsMobile();
   const { content: allContent } = useContent();
   const [selectedSeason, setSelectedSeason] = useState<string | null>(null);
   const [playingUrl, setPlayingUrl] = useState<string | null>(null);
@@ -263,8 +265,8 @@ const ContentPage = () => {
             <h2 className="text-xl font-bold mb-5">
               {content.media_type === "movie" ? "Películas relacionadas" : "Series relacionadas"}
             </h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-              {related.map((item, i) => (
+            <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 md:gap-4">
+              {related.slice(0, isMobile ? 6 : 12).map((item, i) => (
                 <ContentCard key={item.docId || item.id} content={item} index={i} grid />
               ))}
             </div>
