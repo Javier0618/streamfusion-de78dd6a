@@ -1,12 +1,23 @@
 import Navbar from "@/components/layout/Navbar";
 import ContentCard from "@/components/home/ContentCard";
-import { useContent } from "@/hooks/useContent";
+import { useInfiniteContent } from "@/hooks/useContent";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { Loader2 } from "lucide-react";
+import { useMemo } from "react";
 
 const SeriesPage = () => {
-  const { content, loading } = useContent("tv");
-  const { displayed, hasMore, sentinelRef } = useInfiniteScroll(content);
+  const { data, isLoading: loading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteContent("tv", 30);
+  
+  const allContent = useMemo(() => {
+    return data?.pages.flatMap(page => page.content) ?? [];
+  }, [data]);
+
+  const { displayed, sentinelRef } = useInfiniteScroll(
+    allContent, 
+    30, 
+    hasNextPage ? async () => { await fetchNextPage(); } : undefined,
+    hasNextPage
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -27,7 +38,7 @@ const SeriesPage = () => {
               ))}
             </div>
             <div ref={sentinelRef} className="flex justify-center py-8">
-              {hasMore && <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />}
+              {(hasNextPage || isFetchingNextPage) && <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />}
             </div>
           </>
         )}

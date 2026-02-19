@@ -299,7 +299,7 @@ const ContentPage = () => {
 
           {/* Sidebar (Series only) - Hidden on mobile */}
           {isSeries && seasons.length > 0 && (
-            <div className="hidden lg:flex lg:w-[350px] xl:w-[400px] flex-shrink-0 bg-[#0a0a0a] border border-white/5 rounded-xl flex-col h-[auto] lg:h-[450px] xl:h-[500px]">
+            <div className="hidden lg:flex lg:w-[350px] xl:w-[400px] flex-shrink-0 bg-[#0a0a0a] border border-white/5 rounded-xl flex-col h-full aspect-video">
               <div className="p-4 border-b border-white/5">
                 <h3 className="font-bold text-sm mb-3 text-white/60">Temporadas</h3>
                 <div className="flex gap-2 flex-wrap">
