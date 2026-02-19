@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import Navbar from "@/components/layout/Navbar";
+import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import {
   fetchAllContent,
   updateContent,
@@ -542,13 +543,17 @@ const AdminPage = () => {
     { id: "settings", label: "Configuración", icon: <Settings className="w-4 h-4" /> },
   ];
 
-  const filteredContent = contentList.filter(c =>
+  const filteredContent = useMemo(() => contentList.filter(c =>
     c.title.toLowerCase().includes(contentSearch.toLowerCase())
-  );
-  const filteredUsers = users.filter(u =>
+  ), [contentList, contentSearch]);
+
+  const filteredUsers = useMemo(() => users.filter(u =>
     (u.name || "").toLowerCase().includes(userSearch.toLowerCase()) ||
     (u.email || "").toLowerCase().includes(userSearch.toLowerCase())
-  );
+  ), [users, userSearch]);
+
+  const { displayed: displayedContent, sentinelRef: contentSentinel } = useInfiniteScroll(filteredContent, 30);
+  const { displayed: displayedUsers, sentinelRef: usersSentinel } = useInfiniteScroll(filteredUsers, 30);
 
   return (
     <div className="min-h-screen bg-background">
@@ -730,7 +735,7 @@ const AdminPage = () => {
                 </div>
 
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-                  {filteredContent.map(c => (
+                  {displayedContent.map(c => (
                     <div key={c.docId} className="bg-card rounded-lg border border-border overflow-hidden flex flex-col group relative">
                       <div className="aspect-[2/3] relative overflow-hidden">
                         <img
@@ -770,6 +775,7 @@ const AdminPage = () => {
                       </div>
                     </div>
                   ))}
+                  <div ref={contentSentinel} className="h-1 w-full col-span-full" />
                   {filteredContent.length === 0 && (
                     <div className="col-span-full text-center py-16 text-muted-foreground border border-dashed border-border rounded-xl bg-card">
                       <Film className="w-12 h-12 mx-auto mb-4 opacity-30" />
@@ -819,7 +825,7 @@ const AdminPage = () => {
                 </div>
 
                 <div className="space-y-2">
-                  {filteredUsers.map(u => (
+                  {displayedUsers.map(u => (
                     <div key={u.id} className="bg-card border border-border rounded-lg p-4">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1 min-w-0">
@@ -870,6 +876,7 @@ const AdminPage = () => {
                       )}
                     </div>
                   ))}
+                  <div ref={usersSentinel} className="h-1 w-full" />
                   {filteredUsers.length === 0 && (
                     <div className="text-center py-16 text-muted-foreground">
                       <Users className="w-12 h-12 mx-auto mb-4 opacity-30" />
