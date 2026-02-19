@@ -1,32 +1,4 @@
-import { useMemo, useEffect, useState } from "react";
-import Hero from "@/components/home/Hero";
-import ContentCarousel from "@/components/home/ContentCarousel";
-import PlatformFilter from "@/components/home/PlatformFilter";
-import Navbar from "@/components/layout/Navbar";
-import { useContent, useInfiniteContent } from "@/hooks/useContent";
-import { getGenreName } from "@/lib/genres";
-import { fetchWebConfig } from "@/lib/firestore";
 
-const Index = () => {
-  // Use paginated content for the main list to avoid loading everything at once
-  const { 
-    data, 
-    isLoading: loadingInfinite,
-    fetchNextPage,
-    hasNextPage,
-    isFetchingNextPage
-  } = useInfiniteContent(undefined, 50);
-
-  // Still use useContent for specialized sections if needed, or better, derive from paginated data
-  // For the home sections (estreno, agregado), we might still need a targeted fetch or just use the first page
-  const { content, loading: loadingAll } = useContent();
-  const [webConfig, setWebConfig] = useState<any>(null);
-
-  const loading = loadingAll && loadingInfinite;
-
-  useEffect(() => {
-    fetchWebConfig().then((config) => setWebConfig(config)).catch(console.error);
-  }, []);
 
   const heroContent = useMemo(() => {
     if (content.length === 0) return null;
@@ -98,9 +70,6 @@ const Index = () => {
       <Navbar />
       <Hero content={heroContent} allContent={content} />
 
-      <div className="relative z-10 pb-16">
-        <PlatformFilter content={content} visiblePlatforms={webConfig?.visiblePlatforms} platformImages={webConfig?.platformImages} />
-        {isCategoryVisible("enEstreno") && enEstreno.length > 0 && <ContentCarousel title="En Estreno/Emisión" items={enEstreno.slice(0, sections.enEstreno)} />}
         {isCategoryVisible("recienAgregado") && recienAgregado.length > 0 && <ContentCarousel title="Recién Agregado" items={recienAgregado.slice(0, sections.recienAgregado)} />}
         {isCategoryVisible("peliculas") && movies.length > 0 && <ContentCarousel title="Películas Populares" items={movies.slice(0, sections.peliculasPopulares)} viewAllLink="/category/movies" />}
         {isCategoryVisible("series") && series.length > 0 && <ContentCarousel title="Series Populares" items={series.slice(0, sections.seriesPopulares)} viewAllLink="/category/series" />}
