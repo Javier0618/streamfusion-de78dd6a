@@ -432,7 +432,7 @@ const AdminPage = () => {
   }, [tab]);
 
   const loadMoreContent = async () => {
-    if (!hasMoreContent || loading) return;
+    if (loading || isSearchingContent) return;
     try {
       const { content: newContent, lastVisible } = await fetchContentPaginated(30, lastContentDoc);
       setContentList(prev => [...prev, ...newContent]);
@@ -619,7 +619,7 @@ const AdminPage = () => {
     filteredContent, 
     30, 
     contentSearch.trim() ? undefined : loadMoreContent, 
-    hasMoreContent
+    true
   );
   
   const { displayed: displayedUsers, sentinelRef: usersSentinel, isLoadingMore: loadingUsers } = useInfiniteScroll(
