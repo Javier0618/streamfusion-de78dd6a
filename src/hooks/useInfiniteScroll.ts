@@ -20,10 +20,15 @@ export const useInfiniteScroll = <T>(items: T[], pageSize = PAGE_SIZE) => {
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting && hasMore) {
+          console.log("Sentinel intersecting, loading more...");
           loadMore();
         }
       },
-      { rootMargin: "400px" }
+      { 
+        root: null,
+        rootMargin: "0px 0px 800px 0px",
+        threshold: 0.1
+      }
     );
 
     observer.observe(sentinel);

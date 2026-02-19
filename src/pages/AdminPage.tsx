@@ -424,17 +424,32 @@ const AdminPage = () => {
     loadTabData(tab);
   }, [tab]);
 
+  // Pre-load content and users when the page mounts to avoid delay on tab switch
+  useEffect(() => {
+    const preLoad = async () => {
+      const [c, u] = await Promise.all([fetchAllContent(), fetchAllUsers()]);
+      setContentList(c);
+      setImportedIds(new Set(c.map(item => item.id)));
+      setUsers(u);
+    };
+    preLoad();
+  }, []);
+
   const loadTabData = async (t: Tab) => {
     setLoading(true);
     try {
       if (t === "tmdb" || t === "content") {
-        const c = await fetchAllContent();
-        setContentList(c);
-        setImportedIds(new Set(c.map(item => item.id)));
+        if (contentList.length === 0) {
+          const c = await fetchAllContent();
+          setContentList(c);
+          setImportedIds(new Set(c.map(item => item.id)));
+        }
       }
       if (t === "users") {
-        const u = await fetchAllUsers();
-        setUsers(u);
+        if (users.length === 0) {
+          const u = await fetchAllUsers();
+          setUsers(u);
+        }
       }
       if (t === "messages") {
         const m = await fetchAllMessages();
@@ -741,6 +756,7 @@ const AdminPage = () => {
                         <img
                           src={c.poster_path ? `${TMDB_IMG_BASE}/w342${c.poster_path}` : "/placeholder.svg"}
                           alt={c.title}
+                          loading="lazy"
                           className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                         />
                         <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-2">
@@ -775,7 +791,7 @@ const AdminPage = () => {
                       </div>
                     </div>
                   ))}
-                  <div ref={contentSentinel} className="h-1 w-full col-span-full" />
+                  <div ref={contentSentinel} className="h-20 w-full col-span-full flex items-center justify-center bg-transparent" />
                   {filteredContent.length === 0 && (
                     <div className="col-span-full text-center py-16 text-muted-foreground border border-dashed border-border rounded-xl bg-card">
                       <Film className="w-12 h-12 mx-auto mb-4 opacity-30" />
@@ -876,7 +892,7 @@ const AdminPage = () => {
                       )}
                     </div>
                   ))}
-                  <div ref={usersSentinel} className="h-1 w-full" />
+                  <div ref={usersSentinel} className="h-20 w-full flex items-center justify-center bg-transparent" />
                   {filteredUsers.length === 0 && (
                     <div className="text-center py-16 text-muted-foreground">
                       <Users className="w-12 h-12 mx-auto mb-4 opacity-30" />
