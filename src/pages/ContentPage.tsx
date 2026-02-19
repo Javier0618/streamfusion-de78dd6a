@@ -113,6 +113,7 @@ const ContentPage = () => {
   const activeSeason = selectedSeason || (seasons.length > 0 ? seasons[0][0] : null);
   const episodes = activeSeason && content.seasons?.[activeSeason]?.episodes
     ? Object.entries(content.seasons[activeSeason].episodes)
+        .filter(([_, ep]) => !!ep.video_url) // Only show episodes with video_url
     : [];
   const year = content.release_date?.split("-")[0];
   const isMovie = content.media_type === "movie";
