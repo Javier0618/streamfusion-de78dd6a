@@ -1,0 +1,117 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Función auxiliar para verificar si el usuario es administrador
+    function isAdmin() {
+      return request.auth != null && request.auth.token.email == 'javiervelasquez0618@gmail.com';
+    }
+
+    // Colección de Contenido (con validación mejorada)
+    match /content/{contentId} {
+      allow read;
+      allow create, update: if isAdmin() &&
+        request.resource.data.id is number &&
+        request.resource.data.media_type is string &&
+        request.resource.data.title is string &&
+        request.resource.data.overview is string &&
+        request.resource.data.poster_path is string &&
+        request.resource.data.genres is list &&
+        request.resource.data.imported_by == request.auth.token.email &&
+        request.resource.data.imported_at == request.time &&
+        request.resource.data.display_options is map &&
+        request.resource.data.display_options.main_sections is list &&
+        request.resource.data.display_options.home_sections is list &&
+        request.resource.data.display_options.platforms is list &&
+        (!('original_title' in request.resource.data) || request.resource.data.original_title is string) &&
+        (!('backdrop_path' in request.resource.data) || request.resource.data.backdrop_path is string) &&
+        (!('release_date' in request.resource.data) || request.resource.data.release_date is string) &&
+        (!('vote_average' in request.resource.data) || request.resource.data.vote_average is number) &&
+        // NEW VALIDATIONS
+        (!('video_url' in request.resource.data) || request.resource.data.video_url is string) &&
+        (!('seasons' in request.resource.data) || request.resource.data.seasons is map);
+
+      // Permitir al administrador eliminar contenido
+      allow delete: if isAdmin();
+    }
+    
+    match /content/{contentId} {
+        // Validar la estructura de las temporadas y episodios
+        allow create, update: if (!('seasons' in request.resource.data) || 
+            request.resource.data.seasons.keys().hasAll(request.resource.data.seasons.keys()) &&
+            request.resource.data.seasons.values().size() > 0 &&
+            request.resource.data.seasons.values()[0].keys().hasAll(['season_number', 'episodes']) &&
+            request.resource.data.seasons.values()[0].season_number is number &&
+            request.resource.data.seasons.values()[0].episodes is map &&
+            request.resource.data.seasons.values()[0].episodes.keys().hasAll(request.resource.data.seasons.values()[0].episodes.keys()) &&
+            request.resource.data.seasons.values()[0].episodes.values().size() > 0 &&
+            request.resource.data.seasons.values()[0].episodes.values()[0].keys().hasAll(['episode_number', 'name', 'overview', 'still_path', 'video_url']) &&
+            request.resource.data.seasons.values()[0].episodes.values()[0].episode_number is number &&
+            request.resource.data.seasons.values()[0].episodes.values()[0].name is string &&
+            request.resource.data.seasons.values()[0].episodes.values()[0].overview is string &&
+            request.resource.data.seasons.values()[0].episodes.values()[0].still_path is string &&
+            request.resource.data.seasons.values()[0].episodes.values()[0].video_url is string
+        );
+    }
+
+
+// Colección de Usuarios (CORREGIDA)
+match /users/{userId} {
+  // El administrador ahora también puede leer y actualizar perfiles
+  allow read, update: if request.auth != null && (request.auth.uid == userId || isAdmin());
+  allow create: if request.auth != null && request.auth.uid == userId;
+  allow list, delete: if isAdmin();
+}
+
+    // Colección de Mensajes
+match /messages/{messageId} {
+  allow read: if request.auth != null && (
+    resource.data.to == request.auth.uid ||
+    resource.data.from == request.auth.uid || // <-- Esta es la línea que soluciona el problema
+    resource.data.to == 'all' ||
+    isAdmin()
+  );
+  allow create: if request.auth != null && (
+    (request.resource.data.from == request.auth.uid && request.resource.data.to == 'admin') ||
+    isAdmin()
+  );
+  allow update: if (request.auth.uid == resource.data.to && request.resource.data.read == true) || isAdmin();
+  allow delete: if request.auth != null && (
+    resource.data.from == request.auth.uid ||
+    isAdmin()
+  );
+}
+
+    // Colección de Clicks por Póster
+  match /posterClicks/{posterId} {
+    allow create, update: if true;
+    allow read: if request.auth != null;
+    allow delete: if isAdmin();
+  }
+
+// Colección de Configuración
+	match /web_config/settings {
+    allow read;
+    allow write: if isAdmin();
+}
+
+// Colección de Secciones de Inicio
+match /home_sections/{sectionId} {
+  // Permitir a cualquier usuario leer las secciones para que se muestren en la página de inicio
+  allow read;
+  // Permitir solo a los administradores crear, actualizar y eliminar secciones
+  allow write: if isAdmin();
+}
+
+match /web_config/{docId} {
+  allow read: if true;           // ✅ Cualquiera puede leer (necesario para mostrar splash)
+  allow write: if isAdmin();     // ✅ Solo admins pueden modificar
+}
+
+match /modal_sections/{sectionId} {
+  allow read;
+  allow write: if request.auth != null && request.auth.token.email == 'javiervelasquez0618@gmail.com';
+}
+  }
+}
