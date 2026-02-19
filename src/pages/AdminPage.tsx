@@ -729,49 +729,49 @@ const AdminPage = () => {
                   <span className="text-sm text-muted-foreground whitespace-nowrap">{filteredContent.length} títulos</span>
                 </div>
 
-                <div className="space-y-2">
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
                   {filteredContent.map(c => (
-                    <div key={c.docId} className="flex items-center gap-4 bg-card rounded-lg p-3 border border-border hover:border-primary/30 transition-colors">
-                      <img
-                        src={getImageUrl(c.poster_path, "w200")}
-                        alt={c.title}
-                        className="w-10 h-14 object-cover rounded flex-shrink-0"
-                      />
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-sm truncate">{c.title}</p>
-                        <p className="text-xs text-muted-foreground truncate">
-                          {c.media_type === "movie" ? "Película" : "Serie"} ·{" "}
-                          {(c.release_date || "").split("-")[0]}
-                        </p>
-                        <div className="flex gap-1 flex-wrap mt-1">
-                          {c.display_options?.platforms?.map(p => (
-                            <span key={p} className="text-xs bg-primary/10 text-primary px-1.5 py-0.5 rounded">{p}</span>
-                          ))}
-                          {c.display_options?.home_sections?.map(s => (
-                            <span key={s} className="text-xs bg-secondary text-secondary-foreground px-1.5 py-0.5 rounded">{s}</span>
-                          ))}
+                    <div key={c.docId} className="bg-card rounded-lg border border-border overflow-hidden flex flex-col group relative">
+                      <div className="aspect-[2/3] relative overflow-hidden">
+                        <img
+                          src={c.poster_path ? `${TMDB_IMG_BASE}/w342${c.poster_path}` : "/placeholder.svg"}
+                          alt={c.title}
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                        />
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center gap-2 p-2">
+                          <button
+                            onClick={() => setEditingOptions(c)}
+                            className="w-full py-1.5 bg-primary text-primary-foreground rounded-md text-xs font-medium hover:bg-primary/90 flex items-center justify-center gap-1.5"
+                          >
+                            <Edit className="w-3.5 h-3.5" /> Editar
+                          </button>
+                          <button
+                            onClick={() => c.docId && handleDeleteContent(c.docId)}
+                            className="w-full py-1.5 bg-destructive text-destructive-foreground rounded-md text-xs font-medium hover:bg-destructive/90 flex items-center justify-center gap-1.5"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" /> Eliminar
+                          </button>
                         </div>
+                        {c.media_type && (
+                          <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm text-[10px] font-bold px-1.5 py-0.5 rounded uppercase text-white">
+                            {c.media_type === "movie" ? "PELI" : "SERIE"}
+                          </div>
+                        )}
                       </div>
-                      <div className="flex gap-1 flex-shrink-0">
-                        <button
-                          onClick={() => setEditingOptions(c)}
-                          title="Editar opciones"
-                          className="p-2 hover:bg-accent rounded-md transition-colors text-muted-foreground hover:text-foreground"
-                        >
-                          <Edit className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => c.docId && handleDeleteContent(c.docId)}
-                          title="Eliminar"
-                          className="p-2 hover:bg-destructive/20 rounded-md transition-colors text-destructive"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
+                      <div className="p-3">
+                        <h4 className="font-bold text-sm line-clamp-1 mb-1">{c.title}</h4>
+                        <div className="flex items-center justify-between text-[10px] text-muted-foreground uppercase tracking-wider">
+                          <span>{(c.release_date || "").split("-")[0]}</span>
+                          <div className="flex gap-1">
+                            {c.display_options?.home_sections?.includes("slider") && <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />}
+                            {c.display_options?.home_sections?.includes("estreno") && <Eye className="w-3 h-3 text-primary" />}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   ))}
                   {filteredContent.length === 0 && (
-                    <div className="text-center py-16 text-muted-foreground">
+                    <div className="col-span-full text-center py-16 text-muted-foreground border border-dashed border-border rounded-xl bg-card">
                       <Film className="w-12 h-12 mx-auto mb-4 opacity-30" />
                       <p>No hay contenido</p>
                     </div>
