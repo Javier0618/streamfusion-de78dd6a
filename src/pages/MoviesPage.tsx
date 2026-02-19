@@ -1,23 +1,19 @@
 import Navbar from "@/components/layout/Navbar";
 import ContentCard from "@/components/home/ContentCard";
-import { useInfiniteContent } from "@/hooks/useContent";
+import { useContent } from "@/hooks/useContent";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
 import { Loader2 } from "lucide-react";
 import { useMemo } from "react";
 
 const MoviesPage = () => {
-  const { data, isLoading: loading, fetchNextPage, hasNextPage, isFetchingNextPage } = useInfiniteContent("movie", 30);
+  const { content, loading } = useContent();
   
-  const allContent = useMemo(() => {
-    return data?.pages.flatMap(page => page.content) ?? [];
-  }, [data]);
-
-  const { displayed, sentinelRef } = useInfiniteScroll(
-    allContent, 
-    30, 
-    hasNextPage ? async () => { await fetchNextPage(); } : undefined,
-    hasNextPage
+  const filtered = useMemo(
+    () => content.filter((c) => c.media_type === "movie" || c.display_options?.main_sections?.includes("movies")),
+    [content]
   );
+
+  const { displayed, hasMore, sentinelRef } = useInfiniteScroll(filtered);
 
   return (
     <div className="min-h-screen bg-background">
@@ -30,6 +26,8 @@ const MoviesPage = () => {
               <div key={i} className="aspect-[2/3] bg-muted rounded-xl animate-pulse" />
             ))}
           </div>
+        ) : filtered.length === 0 ? (
+          <p className="text-muted-foreground">No se encontró contenido de películas.</p>
         ) : (
           <>
             <div className="grid grid-cols-3 md:grid-cols-6 gap-3 md:gap-4">
@@ -38,7 +36,7 @@ const MoviesPage = () => {
               ))}
             </div>
             <div ref={sentinelRef} className="flex justify-center py-8">
-              {(hasNextPage || isFetchingNextPage) && <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />}
+              {hasMore && <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />}
             </div>
           </>
         )}

@@ -109,7 +109,7 @@ export const fetchContentPaginated = async (pageSize: number, lastDoc?: QueryDoc
 };
 
 export const fetchAllContent = async (): Promise<Content[]> => {
-  const q = query(getContentCollection(), orderBy("imported_at", "desc"), limit(50));
+  const q = query(getContentCollection(), orderBy("imported_at", "desc"));
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ ...d.data(), docId: d.id } as Content));
 };
@@ -118,8 +118,7 @@ export const fetchContentByType = async (type: "movie" | "tv"): Promise<Content[
   const q = query(
     getContentCollection(),
     where("media_type", "==", type),
-    orderBy("imported_at", "desc"),
-    limit(50)
+    orderBy("imported_at", "desc")
   );
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ ...d.data(), docId: d.id } as Content));
