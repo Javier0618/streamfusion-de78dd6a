@@ -1017,6 +1017,43 @@ const AdminPage = () => {
                       <input type="number" value={config.heroSlider?.random || 4} onChange={e => setConfig({ ...config, heroSlider: { ...(config.heroSlider || {}), random: Number(e.target.value) } })} className={inputCls} min={0} max={10} />
                     </div>
                   </div>
+
+                  {/* Logo */}
+                  <div className="mt-6 border-t border-border pt-4">
+                    <h3 className="text-sm font-semibold mb-3 flex items-center gap-2"><Image className="w-4 h-4" /> Logo del Sitio</h3>
+                    <div>
+                      <label className="text-xs text-muted-foreground">URL de la imagen del logo (dejar vacío para mostrar texto)</label>
+                      <input value={config.logoUrl || ""} onChange={e => setConfig({ ...config, logoUrl: e.target.value })} className={inputCls} placeholder="https://..." />
+                    </div>
+                    {config.logoUrl && (
+                      <img src={config.logoUrl} alt="Logo preview" className="mt-2 h-10 object-contain rounded border border-border bg-background p-1" onError={e => (e.currentTarget.style.display = "none")} />
+                    )}
+                  </div>
+
+                  {/* Platform Images */}
+                  <div className="mt-6 border-t border-border pt-4">
+                    <h3 className="text-sm font-semibold mb-3 flex items-center gap-2"><Image className="w-4 h-4" /> Imágenes de Plataformas</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {PLATFORMS.map(p => (
+                        <div key={p.id}>
+                          <label className="text-xs text-muted-foreground">{p.label} — URL de imagen</label>
+                          <input
+                            value={config.platformImages?.[p.id] || ""}
+                            onChange={e => setConfig({
+                              ...config,
+                              platformImages: { ...(config.platformImages || {}), [p.id]: e.target.value }
+                            })}
+                            className={inputCls}
+                            placeholder="https://..."
+                          />
+                          {config.platformImages?.[p.id] && (
+                            <img src={config.platformImages[p.id]} alt={p.label} className="mt-1 h-8 object-contain rounded" onError={e => (e.currentTarget.style.display = "none")} />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
                   <button onClick={handleSaveConfig} className="mt-4 px-6 py-2 bg-primary text-primary-foreground rounded-md text-sm font-semibold hover:bg-primary/90 flex items-center gap-2">
                     <Save className="w-4 h-4" /> Guardar Configuración
                   </button>

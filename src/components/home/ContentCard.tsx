@@ -29,7 +29,7 @@ const ContentCard = ({ content, index = 0, grid = false }: ContentCardProps) => 
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.2, delay: Math.min(index * 0.015, 0.15) }}
       onClick={handleClick}
-      className={grid ? "cursor-pointer" : "flex-shrink-0 w-[150px] md:w-[180px] cursor-pointer"}
+      className={grid ? "cursor-pointer" : "flex-shrink-0 w-[calc((100vw-2rem-1.5rem)/3)] md:w-[180px] cursor-pointer"}
     >
       <div className="group/card relative aspect-[2/3] rounded-xl overflow-hidden bg-muted shadow-md hover:shadow-xl transition-shadow duration-300">
         <img

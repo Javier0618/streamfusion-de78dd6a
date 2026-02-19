@@ -1,8 +1,9 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { Search, User, LogOut, Shield, Menu, X } from "lucide-react";
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { fetchWebConfig } from "@/lib/firestore";
 
 const Navbar = () => {
   const { user, isAdmin, logout } = useAuth();
@@ -11,6 +12,13 @@ const Navbar = () => {
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const [logoUrl, setLogoUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchWebConfig().then((cfg) => {
+      if (cfg?.logoUrl) setLogoUrl(cfg.logoUrl);
+    }).catch(console.error);
+  }, []);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -62,8 +70,12 @@ const Navbar = () => {
 
       <div className="flex items-center justify-between px-4 md:px-12 py-4">
         <div className="flex items-center gap-8">
-          <Link to="/" className="text-2xl font-extrabold tracking-tight text-primary">
-            StreamFusion
+          <Link to="/" className="flex items-center">
+            {logoUrl ? (
+              <img src={logoUrl} alt="Logo" className="h-8 md:h-9 object-contain" />
+            ) : (
+              <span className="text-2xl font-extrabold tracking-tight text-primary">StreamFusion</span>
+            )}
           </Link>
           <div className="hidden md:flex items-center gap-6 text-sm font-medium text-secondary-foreground">
             <Link to="/" className="hover:text-foreground transition-colors">Inicio</Link>
