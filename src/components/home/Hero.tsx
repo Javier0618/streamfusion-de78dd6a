@@ -16,9 +16,26 @@ const Hero = ({ content, allContent = [] }: HeroProps) => {
 
   const slides = useMemo(() => {
     const withBackdrop = allContent.filter((c) => c.backdrop_path);
-    if (withBackdrop.length > 0) return withBackdrop.slice(0, 8);
-    if (content) return [content];
-    return [];
+    if (withBackdrop.length === 0) {
+      return content ? [content] : [];
+    }
+
+    // Get the 4 most recent items
+    const mostRecent = withBackdrop.slice(0, 4);
+
+    // Get the rest of the items to pick 4 random ones
+    const remaining = withBackdrop.slice(4);
+
+    let randomRecent: Content[] = [];
+    if (remaining.length > 0) {
+      // Shuffle remaining and take 4
+      randomRecent = [...remaining]
+        .sort(() => 0.5 - Math.random())
+        .slice(0, 4);
+    }
+
+    // Combine them (total up to 8)
+    return [...mostRecent, ...randomRecent];
   }, [allContent, content]);
 
   const [current, setCurrent] = useState(0);
