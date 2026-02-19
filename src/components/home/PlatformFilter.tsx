@@ -1,7 +1,3 @@
-import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
-
-const platforms = [
   {
     id: "netflix",
     label: "Netflix",
@@ -56,16 +52,7 @@ const platforms = [
   },
 ];
 
-interface PlatformFilterProps {
-  content: { display_options?: { platforms?: string[] } }[];
-  visiblePlatforms?: string[];
-  platformImages?: Record<string, string>;
-}
 
-const PlatformFilter = ({ content, visiblePlatforms, platformImages }: PlatformFilterProps) => {
-  const navigate = useNavigate();
-
-  const availablePlatforms = platforms.filter((p) => {
     const hasContent = content.some((c) => c.display_options?.platforms?.includes(p.id));
     if (!hasContent) return false;
     // If visiblePlatforms is configured, only show those that are enabled

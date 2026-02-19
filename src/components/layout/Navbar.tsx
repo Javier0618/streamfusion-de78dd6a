@@ -1,24 +1,3 @@
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
-import { Search, User, LogOut, Shield, Menu, X } from "lucide-react";
-import { useState, useRef, useEffect } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { fetchWebConfig } from "@/lib/firestore";
-
-const Navbar = () => {
-  const { user, isAdmin, logout } = useAuth();
-  const navigate = useNavigate();
-  const [mobileOpen, setMobileOpen] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const [logoUrl, setLogoUrl] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchWebConfig().then((cfg) => {
-      if (cfg?.logoUrl) setLogoUrl(cfg.logoUrl);
-    }).catch(console.error);
-  }, []);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
