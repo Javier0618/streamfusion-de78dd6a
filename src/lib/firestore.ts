@@ -62,6 +62,15 @@ export const importContent = async (data: Omit<Content, "docId">, tmdbId: number
 // ---- Content ----
 export const getContentCollection = () => collection(db, "content");
 
+export const searchContentInFirestore = async (searchText: string): Promise<Content[]> => {
+  const all = await fetchAllContent();
+  const search = searchText.toLowerCase();
+  return all.filter(c => 
+    c.title?.toLowerCase().includes(search) || 
+    c.original_title?.toLowerCase().includes(search)
+  );
+};
+
 export const fetchContentPaginated = async (pageSize: number, lastDoc?: QueryDocumentSnapshot): Promise<{ content: Content[], lastVisible: QueryDocumentSnapshot | null }> => {
   let q = query(getContentCollection(), orderBy("imported_at", "desc"), limit(pageSize));
   if (lastDoc) {
