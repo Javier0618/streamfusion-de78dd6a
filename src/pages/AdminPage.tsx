@@ -393,11 +393,15 @@ const AdminPage = () => {
 
   // Content management
   const [contentList, setContentList] = useState<Content[]>([]);
+  const [lastContentDoc, setLastContentDoc] = useState<any>(null);
+  const [hasMoreContent, setHasMoreContent] = useState(true);
   const [contentSearch, setContentSearch] = useState("");
   const [editingOptions, setEditingOptions] = useState<Content | null>(null);
 
   // Users
   const [users, setUsers] = useState<any[]>([]);
+  const [lastUserDoc, setLastUserDoc] = useState<any>(null);
+  const [hasMoreUsers, setHasMoreUsers] = useState(true);
   const [userSearch, setUserSearch] = useState("");
   const [msgToUser, setMsgToUser] = useState<string | null>(null);
   const [msgToAll, setMsgToAll] = useState(false);
@@ -424,31 +428,48 @@ const AdminPage = () => {
     loadTabData(tab);
   }, [tab]);
 
-  // Pre-load content and users when the page mounts to avoid delay on tab switch
-  useEffect(() => {
-    const preLoad = async () => {
-      const [c, u] = await Promise.all([fetchAllContent(), fetchAllUsers()]);
-      setContentList(c);
-      setImportedIds(new Set(c.map(item => item.id)));
-      setUsers(u);
-    };
-    preLoad();
-  }, []);
+  const loadMoreContent = async () => {
+    if (!hasMoreContent || loading) return;
+    try {
+      const { content: newContent, lastVisible } = await fetchContentPaginated(30, lastContentDoc);
+      setContentList(prev => [...prev, ...newContent]);
+      setLastContentDoc(lastVisible);
+      setHasMoreContent(newContent.length === 30);
+    } catch (e) {
+      console.error("Error loading more content:", e);
+    }
+  };
+
+  const loadMoreUsers = async () => {
+    if (!hasMoreUsers || loading) return;
+    try {
+      const { users: newUsers, lastVisible } = await fetchUsersPaginated(30, lastUserDoc);
+      setUsers(prev => [...prev, ...newUsers]);
+      setLastUserDoc(lastVisible);
+      setHasMoreUsers(newUsers.length === 30);
+    } catch (e) {
+      console.error("Error loading more users:", e);
+    }
+  };
 
   const loadTabData = async (t: Tab) => {
     setLoading(true);
     try {
       if (t === "tmdb" || t === "content") {
         if (contentList.length === 0) {
-          const c = await fetchAllContent();
+          const { content: c, lastVisible } = await fetchContentPaginated(30);
           setContentList(c);
+          setLastContentDoc(lastVisible);
+          setHasMoreContent(c.length === 30);
           setImportedIds(new Set(c.map(item => item.id)));
         }
       }
       if (t === "users") {
         if (users.length === 0) {
-          const u = await fetchAllUsers();
+          const { users: u, lastVisible } = await fetchUsersPaginated(30);
           setUsers(u);
+          setLastUserDoc(lastVisible);
+          setHasMoreUsers(u.length === 30);
         }
       }
       if (t === "messages") {
@@ -493,9 +514,7 @@ const AdminPage = () => {
   const handleDeleteContent = async (docId: string) => {
     if (!confirm("¿Eliminar este contenido?")) return;
     await deleteContent(docId);
-    const c = await fetchAllContent();
-    setContentList(c);
-    setImportedIds(new Set(c.map(item => item.id)));
+    setContentList(prev => prev.filter(c => c.docId !== docId));
     toast({ title: "Eliminado", description: "Contenido eliminado" });
   };
 
@@ -521,8 +540,7 @@ const AdminPage = () => {
   const handleDeleteUser = async (uid: string) => {
     if (!confirm("¿Eliminar este usuario?")) return;
     await deleteFirestoreUser(uid);
-    const u = await fetchAllUsers();
-    setUsers(u);
+    setUsers(prev => prev.filter(u => u.id !== uid));
     toast({ title: "Eliminado", description: "Usuario eliminado" });
   };
 
@@ -567,8 +585,19 @@ const AdminPage = () => {
     (u.email || "").toLowerCase().includes(userSearch.toLowerCase())
   ), [users, userSearch]);
 
-  const { displayed: displayedContent, sentinelRef: contentSentinel } = useInfiniteScroll(filteredContent, 30);
-  const { displayed: displayedUsers, sentinelRef: usersSentinel } = useInfiniteScroll(filteredUsers, 30);
+  const { displayed: displayedContent, sentinelRef: contentSentinel, isLoadingMore: loadingContent } = useInfiniteScroll(
+    filteredContent, 
+    30, 
+    contentSearch ? undefined : loadMoreContent, 
+    hasMoreContent
+  );
+  
+  const { displayed: displayedUsers, sentinelRef: usersSentinel, isLoadingMore: loadingUsers } = useInfiniteScroll(
+    filteredUsers, 
+    30, 
+    userSearch ? undefined : loadMoreUsers, 
+    hasMoreUsers
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -791,7 +820,9 @@ const AdminPage = () => {
                       </div>
                     </div>
                   ))}
-                  <div ref={contentSentinel} className="h-20 w-full col-span-full flex items-center justify-center bg-transparent" />
+                  <div ref={contentSentinel} className="h-20 w-full col-span-full flex items-center justify-center bg-transparent">
+                    {loadingContent && <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />}
+                  </div>
                   {filteredContent.length === 0 && (
                     <div className="col-span-full text-center py-16 text-muted-foreground border border-dashed border-border rounded-xl bg-card">
                       <Film className="w-12 h-12 mx-auto mb-4 opacity-30" />
@@ -892,7 +923,9 @@ const AdminPage = () => {
                       )}
                     </div>
                   ))}
-                  <div ref={usersSentinel} className="h-20 w-full flex items-center justify-center bg-transparent" />
+                  <div ref={usersSentinel} className="h-20 w-full flex items-center justify-center bg-transparent">
+                    {loadingUsers && <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />}
+                  </div>
                   {filteredUsers.length === 0 && (
                     <div className="text-center py-16 text-muted-foreground">
                       <Users className="w-12 h-12 mx-auto mb-4 opacity-30" />

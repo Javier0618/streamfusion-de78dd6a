@@ -13,11 +13,24 @@ import {
   serverTimestamp,
   Timestamp,
   setDoc,
+  startAfter,
+  type QueryDocumentSnapshot,
 } from "firebase/firestore";
 import { db } from "./firebase";
 import type { Content, Message, HomeSection } from "@/types/content";
 
 // ---- Users ----
+export const fetchUsersPaginated = async (pageSize: number, lastDoc?: QueryDocumentSnapshot) => {
+  let q = query(collection(db, "users"), limit(pageSize));
+  if (lastDoc) {
+    q = query(collection(db, "users"), startAfter(lastDoc), limit(pageSize));
+  }
+  const snap = await getDocs(q);
+  const users = snap.docs.map((d) => ({ id: d.id, ...d.data() } as any));
+  const lastVisible = snap.docs[snap.docs.length - 1];
+  return { users, lastVisible };
+};
+
 export const fetchAllUsers = async () => {
   const snap = await getDocs(collection(db, "users"));
   return snap.docs.map((d) => ({ id: d.id, ...d.data() } as any));
@@ -48,6 +61,17 @@ export const importContent = async (data: Omit<Content, "docId">, tmdbId: number
 
 // ---- Content ----
 export const getContentCollection = () => collection(db, "content");
+
+export const fetchContentPaginated = async (pageSize: number, lastDoc?: QueryDocumentSnapshot): Promise<{ content: Content[], lastVisible: QueryDocumentSnapshot | null }> => {
+  let q = query(getContentCollection(), orderBy("imported_at", "desc"), limit(pageSize));
+  if (lastDoc) {
+    q = query(getContentCollection(), orderBy("imported_at", "desc"), startAfter(lastDoc), limit(pageSize));
+  }
+  const snap = await getDocs(q);
+  const content = snap.docs.map((d) => ({ ...d.data(), docId: d.id } as Content));
+  const lastVisible = snap.docs[snap.docs.length - 1] || null;
+  return { content, lastVisible };
+};
 
 export const fetchAllContent = async (): Promise<Content[]> => {
   const q = query(getContentCollection(), orderBy("imported_at", "desc"));
