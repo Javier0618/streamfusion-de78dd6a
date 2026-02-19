@@ -2,6 +2,25 @@ const TMDB_API_KEY = "32e5e53999e380a0291d66fb304153fe";
 const TMDB_BASE_URL = "https://api.themoviedb.org/3";
 export const TMDB_IMG_BASE = "https://image.tmdb.org/t/p";
 
+export interface TmdbCast {
+  id: number;
+  name: string;
+  character: string;
+  profile_path: string | null;
+}
+
+export interface TmdbCrew {
+  id: number;
+  name: string;
+  job: string;
+  department: string;
+}
+
+export interface TmdbCredits {
+  cast: TmdbCast[];
+  crew: TmdbCrew[];
+}
+
 export interface TmdbSearchResult {
   id: number;
   media_type: "movie" | "tv";
@@ -18,6 +37,7 @@ export interface TmdbSearchResult {
   genre_ids: number[];
   genres?: { id: number; name: string }[];
   seasons?: TmdbSeason[];
+  credits?: TmdbCredits;
 }
 
 export interface TmdbSeason {
@@ -51,7 +71,7 @@ export const searchTmdb = async (query: string, language = "es-MX"): Promise<Tmd
 };
 
 export const fetchTmdbDetails = async (id: number, type: "movie" | "tv", language = "es-MX"): Promise<TmdbSearchResult> => {
-  const url = `${TMDB_BASE_URL}/${type}/${id}?api_key=${TMDB_API_KEY}&language=${language}`;
+  const url = `${TMDB_BASE_URL}/${type}/${id}?api_key=${TMDB_API_KEY}&language=${language}&append_to_response=credits`;
   const res = await fetch(url);
   if (!res.ok) throw new Error("TMDB details error");
   const data = await res.json();

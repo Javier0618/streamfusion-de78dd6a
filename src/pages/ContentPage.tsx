@@ -3,7 +3,7 @@ import { useContentDetail, useContent } from "@/hooks/useContent";
 import Navbar from "@/components/layout/Navbar";
 import VideoPlayer from "@/components/content/VideoPlayer";
 import ContentCard from "@/components/home/ContentCard";
-import { Play, ArrowLeft, Star, Calendar, BookmarkPlus, BookmarkCheck, Clock } from "lucide-react";
+import { Play, Star, Calendar, BookmarkPlus, BookmarkCheck, Clock, Bookmark } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
@@ -13,6 +13,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { addToMyList, removeFromMyList, fetchMyList } from "@/lib/firestore";
 import { toast } from "@/hooks/use-toast";
 import { getGenreName } from "@/lib/genres";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
 const ContentPage = () => {
   const { slug, id } = useParams();
@@ -117,291 +118,228 @@ const ContentPage = () => {
   const isMovie = content.media_type === "movie";
   const isSeries = content.media_type === "tv";
 
+  // TMDB Credits
+  const cast = content.credits?.cast?.slice(0, 10) || [];
+  const creators = content.credits?.crew?.filter((c: any) => c.job === "Director" || c.job === "Creator" || c.job === "Executive Producer").slice(0, 3) || [];
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background text-foreground">
       <Navbar />
 
-      <div className="pt-16">
-        {/* ═══ MOVIE LAYOUT ═══ */}
-        {isMovie && (
-          <>
-            {/* Video Player - full width */}
-            <div className="px-3 md:px-8 pt-4">
-              {playingUrl ? (
-                <VideoPlayer url={playingUrl} title={content.title} />
-              ) : (
-                <div
-                  className="relative w-full aspect-video bg-muted rounded-lg overflow-hidden cursor-pointer group"
-                  onClick={() => content.video_url && setPlayingUrl(content.video_url)}
-                  style={{
-                    backgroundImage: `url(${getBackdropUrl(content.backdrop_path || content.poster_path)})`,
-                    backgroundSize: "cover",
-                    backgroundPosition: "center",
-                  }}
-                >
-                  <div className="absolute inset-0 bg-background/40" />
-                  {content.video_url && (
-                    <div className="absolute inset-0 flex items-center justify-center">
-                      <div className="w-16 h-16 md:w-20 md:h-20 rounded-full border-2 border-foreground/80 flex items-center justify-center bg-background/30 backdrop-blur-sm group-hover:scale-110 transition-transform">
-                        <Play className="w-7 h-7 md:w-9 md:h-9 text-foreground fill-current ml-1" />
-                      </div>
-                    </div>
-                  )}
+      <div className="pt-20 px-4 md:px-8 max-w-7xl mx-auto">
+        {/* ═══ VIDEO SECTION ═══ */}
+        <div className="flex flex-col lg:flex-row gap-6 mb-8">
+          {/* Main Player Area */}
+          <div className="flex-1 min-w-0">
+            {playingUrl ? (
+              <VideoPlayer url={playingUrl} title={content.title} />
+            ) : (
+              <div
+                className="relative w-full aspect-video bg-muted rounded-xl overflow-hidden cursor-pointer group shadow-2xl shadow-black/50"
+                onClick={() => {
+                  if (isMovie && content.video_url) {
+                    setPlayingUrl(content.video_url);
+                  } else if (isSeries && episodes.length > 0 && episodes[0][1].video_url) {
+                    setPlayingUrl(episodes[0][1].video_url);
+                  }
+                }}
+                style={{
+                  backgroundImage: `url(${getBackdropUrl(content.backdrop_path || content.poster_path)})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                }}
+              >
+                <div className="absolute inset-0 bg-black/40 group-hover:bg-black/20 transition-colors" />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-16 h-16 md:w-20 md:h-20 rounded-full border-2 border-white/80 flex items-center justify-center bg-white/10 backdrop-blur-md group-hover:scale-110 transition-transform">
+                    <Play className="w-8 h-8 md:w-10 md:h-10 text-white fill-current ml-1" />
+                  </div>
                 </div>
-              )}
-            </div>
+              </div>
+            )}
+          </div>
 
-            {/* Info section */}
-            <div className="px-3 md:px-8 mt-6 pb-16">
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col md:flex-row gap-6">
-                {/* Poster */}
-                <div className="flex-shrink-0 w-40 md:w-56">
-                  <img src={getImageUrl(content.poster_path)} alt={content.title} className="w-full rounded-lg shadow-xl" />
+          {/* Sidebar (Series only) */}
+          {isSeries && seasons.length > 0 && (
+            <div className="lg:w-[350px] xl:w-[400px] flex-shrink-0 bg-[#0a0a0a] border border-white/5 rounded-xl flex flex-col h-[auto] lg:h-[450px] xl:h-[500px]">
+              <div className="p-4 border-b border-white/5">
+                <h3 className="font-bold text-sm mb-3 text-white/60">Temporadas</h3>
+                <div className="flex gap-2 flex-wrap">
+                  {seasons.map(([key, season]) => (
+                    <button
+                      key={key}
+                      onClick={() => { setSelectedSeason(key); setPlayingUrl(null); }}
+                      className={`w-10 h-10 rounded-full text-xs font-bold transition-all ${
+                        activeSeason === key
+                          ? "bg-primary text-primary-foreground scale-110 shadow-lg shadow-primary/20"
+                          : "bg-white/5 text-white/60 hover:bg-white/10"
+                      }`}
+                    >
+                      T{season.season_number}
+                    </button>
+                  ))}
                 </div>
-
-                {/* Details */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-4">
-                    <div>
-                      <h1 className="text-2xl md:text-4xl font-extrabold mb-1">{content.title}</h1>
-                      {content.original_title && content.original_title !== content.title && (
-                        <p className="text-muted-foreground text-sm italic mb-3">"{content.original_title}"</p>
+                <p className="text-xs text-white/40 mt-4">Episodios ({episodes.length})</p>
+              </div>
+              <div className="flex-1 overflow-y-auto scrollbar-hide p-2 space-y-2">
+                {episodes.map(([epKey, ep]) => (
+                  <div
+                    key={epKey}
+                    onClick={() => setPlayingUrl(ep.video_url)}
+                    className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all hover:bg-white/5 ${
+                      playingUrl === ep.video_url ? "bg-primary/20 ring-1 ring-primary/30" : ""
+                    }`}
+                  >
+                    <div className="relative flex-shrink-0 w-24 aspect-video rounded-md overflow-hidden bg-white/5">
+                      {ep.still_path ? (
+                        <img src={getImageUrl(ep.still_path, "w200")} alt={ep.name} className="w-full h-full object-cover" />
+                      ) : (
+                        <div className="w-full h-full bg-white/5 flex items-center justify-center">
+                          <Play className="w-4 h-4 text-white/20" />
+                        </div>
+                      )}
+                      {playingUrl === ep.video_url && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-primary/40 backdrop-blur-[2px]">
+                          <Play className="w-6 h-6 text-white fill-current" />
+                        </div>
                       )}
                     </div>
-                    {user && (
-                      <button onClick={handleToggleList} className="p-2 hover:bg-accent rounded-md transition-colors flex-shrink-0" title={inMyList ? "En Mi Lista" : "Agregar a Mi Lista"}>
-                        {inMyList ? <BookmarkCheck className="w-6 h-6 text-primary" /> : <BookmarkPlus className="w-6 h-6 text-muted-foreground" />}
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Meta badges */}
-                  <div className="flex flex-wrap items-center gap-3 mb-4">
-                    {content.vote_average != null && (
-                      <span className="flex items-center gap-1.5 text-sm font-bold">
-                        <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                        <span className="text-yellow-400">{content.vote_average.toFixed(1)}</span>
-                      </span>
-                    )}
-                    {year && (
-                      <span className="flex items-center gap-1.5 text-sm text-muted-foreground border border-border px-2.5 py-0.5 rounded-md">
-                        <Calendar className="w-3.5 h-3.5" /> {year}
-                      </span>
-                    )}
-                    <span className="text-xs font-semibold uppercase border border-border px-2.5 py-0.5 rounded-md text-muted-foreground">
-                      Released
-                    </span>
-                  </div>
-
-                  {/* Genres */}
-                  {content.genres?.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-5">
-                      {content.genres.map((g) => (
-                        <span key={g} className="text-xs font-medium border border-border px-3 py-1.5 rounded-md text-foreground hover:bg-accent transition-colors">
-                          {getGenreName(g)}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Sinopsis */}
-                  <div className="bg-card border border-border rounded-lg p-4 mb-5">
-                    <h3 className="font-bold text-sm mb-2">Sinopsis</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{content.overview}</p>
-                  </div>
-
-                  {/* Play button for movie */}
-                  {content.video_url && !playingUrl && (
-                    <button
-                      onClick={() => setPlayingUrl(content.video_url!)}
-                      className="flex items-center gap-2 px-8 py-3 bg-primary text-primary-foreground font-semibold rounded-md hover:bg-primary/90 transition-colors"
-                    >
-                      <Play className="w-5 h-5 fill-current" /> Reproducir
-                    </button>
-                  )}
-                </div>
-              </motion.div>
-
-              {/* Related */}
-              {related.length > 0 && (
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mt-12">
-                  <h2 className="text-xl font-bold mb-5">También podría gustarte</h2>
-                  <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 md:gap-4">
-                    {related.slice(0, isMobile ? 6 : 12).map((item, i) => (
-                      <ContentCard key={item.docId || item.id} content={item} index={i} grid />
-                    ))}
-                  </div>
-                </motion.div>
-              )}
-            </div>
-          </>
-        )}
-
-        {/* ═══ SERIES LAYOUT ═══ */}
-        {isSeries && (
-          <>
-            {/* Player + Episodes side by side */}
-            <div className="px-3 md:px-8 pt-4">
-              <div className="flex flex-col lg:flex-row gap-4">
-                {/* Player area */}
-                <div className="flex-1 min-w-0">
-                  {playingUrl ? (
-                    <VideoPlayer url={playingUrl} title={content.title} />
-                  ) : (
-                    <div
-                      className="relative w-full aspect-video bg-muted rounded-lg overflow-hidden cursor-pointer group"
-                      onClick={() => {
-                        if (episodes.length > 0 && episodes[0][1].video_url) {
-                          setPlayingUrl(episodes[0][1].video_url);
-                        }
-                      }}
-                      style={{
-                        backgroundImage: `url(${getBackdropUrl(content.backdrop_path || content.poster_path)})`,
-                        backgroundSize: "cover",
-                        backgroundPosition: "center",
-                      }}
-                    >
-                      <div className="absolute inset-0 bg-background/40" />
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <div className="w-16 h-16 md:w-20 md:h-20 rounded-full border-2 border-foreground/80 flex items-center justify-center bg-background/30 backdrop-blur-sm group-hover:scale-110 transition-transform">
-                          <Play className="w-7 h-7 md:w-9 md:h-9 text-foreground fill-current ml-1" />
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Episodes sidebar */}
-                {seasons.length > 0 && (
-                  <div className="lg:w-80 xl:w-96 flex-shrink-0 bg-card border border-border rounded-lg overflow-hidden">
-                    <div className="p-3 border-b border-border">
-                      <h3 className="font-bold text-sm mb-2">Temporadas</h3>
-                      <div className="flex gap-2 flex-wrap">
-                        {seasons.map(([key, season]) => (
-                          <button
-                            key={key}
-                            onClick={() => { setSelectedSeason(key); setPlayingUrl(null); }}
-                            className={`w-9 h-9 rounded-full text-xs font-bold transition-colors ${
-                              activeSeason === key
-                                ? "bg-primary text-primary-foreground"
-                                : "bg-secondary text-secondary-foreground hover:bg-accent"
-                            }`}
-                          >
-                            T{season.season_number}
-                          </button>
-                        ))}
-                      </div>
-                      <p className="text-xs text-muted-foreground mt-2">Episodios ({episodes.length})</p>
-                    </div>
-                    <div className="max-h-[400px] lg:max-h-[calc(56.25vw*0.65-80px)] overflow-y-auto">
-                      {episodes.map(([epKey, ep]) => (
-                        <div
-                          key={epKey}
-                          onClick={() => setPlayingUrl(ep.video_url)}
-                          className={`flex items-center gap-3 p-2.5 cursor-pointer transition-colors hover:bg-accent border-b border-border/50 last:border-b-0 ${
-                            playingUrl === ep.video_url ? "bg-primary/10" : ""
-                          }`}
-                        >
-                          <div className="relative flex-shrink-0 w-20 aspect-video rounded overflow-hidden bg-muted">
-                            {ep.still_path ? (
-                              <img src={getImageUrl(ep.still_path, "w200")} alt={ep.name} className="w-full h-full object-cover" />
-                            ) : (
-                              <div className="w-full h-full bg-secondary flex items-center justify-center">
-                                <Play className="w-4 h-4 text-muted-foreground" />
-                              </div>
-                            )}
-                            {playingUrl === ep.video_url && (
-                              <div className="absolute inset-0 flex items-center justify-center bg-background/50">
-                                <Play className="w-5 h-5 text-primary fill-primary" />
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs text-primary font-medium">Episodio {ep.episode_number}</p>
-                            <p className="text-xs font-semibold text-foreground truncate">Episodio {ep.episode_number}</p>
-                          </div>
-                        </div>
-                      ))}
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-[10px] font-bold uppercase tracking-wider ${playingUrl === ep.video_url ? "text-primary" : "text-white/40"}`}>
+                        Episodio {ep.episode_number}
+                      </p>
+                      <p className="text-sm font-medium text-white/90 truncate">Episodio {ep.episode_number}</p>
                     </div>
                   </div>
-                )}
+                ))}
               </div>
             </div>
+          )}
+        </div>
 
-            {/* Info section */}
-            <div className="px-3 md:px-8 mt-6 pb-16">
-              <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="flex flex-col md:flex-row gap-6">
-                {/* Poster */}
-                <div className="flex-shrink-0 w-40 md:w-56">
-                  <img src={getImageUrl(content.poster_path)} alt={content.title} className="w-full rounded-lg shadow-xl" />
-                </div>
+        {/* ═══ INFO SECTION ═══ */}
+        <div className="flex flex-col md:flex-row gap-8 mb-12">
+          {/* Poster Column */}
+          <div className="w-48 md:w-64 flex-shrink-0">
+            <motion.img 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              src={getImageUrl(content.poster_path, "w500")} 
+              alt={content.title} 
+              className="w-full rounded-xl shadow-2xl border border-white/10"
+            />
+          </div>
 
-                {/* Details */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-start justify-between gap-4">
-                    <h1 className="text-2xl md:text-4xl font-extrabold mb-1">{content.title}</h1>
-                    {user && (
-                      <button onClick={handleToggleList} className="p-2 hover:bg-accent rounded-md transition-colors flex-shrink-0" title={inMyList ? "En Mi Lista" : "Agregar a Mi Lista"}>
-                        {inMyList ? <BookmarkCheck className="w-6 h-6 text-primary" /> : <BookmarkPlus className="w-6 h-6 text-muted-foreground" />}
-                      </button>
-                    )}
-                  </div>
-
-                  {/* Meta badges */}
-                  <div className="flex flex-wrap items-center gap-3 mb-4">
-                    {content.vote_average != null && (
-                      <span className="flex items-center gap-1.5 text-sm font-bold">
-                        <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                        <span className="text-yellow-400">{content.vote_average.toFixed(1)}</span>
-                      </span>
-                    )}
-                    {year && (
-                      <span className="flex items-center gap-1.5 text-sm text-muted-foreground border border-border px-2.5 py-0.5 rounded-md">
-                        <Calendar className="w-3.5 h-3.5" /> {year}
-                      </span>
-                    )}
-                    {seasons.length > 0 && (
-                      <span className="flex items-center gap-1.5 text-sm text-muted-foreground border border-border px-2.5 py-0.5 rounded-md">
-                        <Clock className="w-3.5 h-3.5" /> {seasons.length} Temporadas
-                      </span>
-                    )}
-                    <span className="text-xs font-semibold uppercase border border-border px-2.5 py-0.5 rounded-md text-muted-foreground">
-                      Returning Series
-                    </span>
-                  </div>
-
-                  {/* Genres */}
-                  {content.genres?.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mb-5">
-                      {content.genres.map((g) => (
-                        <span key={g} className="text-xs font-medium border border-border px-3 py-1.5 rounded-md text-foreground hover:bg-accent transition-colors">
-                          {getGenreName(g)}
-                        </span>
-                      ))}
+          {/* Details Column */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start justify-between gap-4 mb-4">
+              <div>
+                <h1 className="text-3xl md:text-5xl font-black mb-2 tracking-tight">{content.title}</h1>
+                <div className="flex items-center gap-4 text-white/60">
+                  {content.vote_average != null && (
+                    <div className="flex items-center gap-1">
+                      <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                      <span className="font-bold text-white">{content.vote_average.toFixed(1)}</span>
+                      <span className="text-xs">(834)</span>
                     </div>
                   )}
-
-                  {/* Sinopsis */}
-                  <div className="bg-card border border-border rounded-lg p-4">
-                    <h3 className="font-bold text-sm mb-2">Sinopsis</h3>
-                    <p className="text-sm text-muted-foreground leading-relaxed">{content.overview}</p>
-                  </div>
+                  {year && (
+                    <div className="flex items-center gap-1">
+                      <Calendar className="w-4 h-4" />
+                      <span>{year}</span>
+                    </div>
+                  )}
+                  {isSeries && seasons.length > 0 && (
+                    <div className="flex items-center gap-1">
+                      <Clock className="w-4 h-4" />
+                      <span>{seasons.length} Temporadas</span>
+                    </div>
+                  )}
+                  <span className="text-[10px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border border-white/20">
+                    {isMovie ? "Released" : "Returning Series"}
+                  </span>
                 </div>
-              </motion.div>
-
-              {/* Related */}
-              {related.length > 0 && (
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="mt-12">
-                  <h2 className="text-xl font-bold mb-5">También podría gustarte</h2>
-                  <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-2 md:gap-4">
-                    {related.slice(0, isMobile ? 6 : 12).map((item, i) => (
-                      <ContentCard key={item.docId || item.id} content={item} index={i} grid />
-                    ))}
-                  </div>
-                </motion.div>
+              </div>
+              {user && (
+                <button 
+                  onClick={handleToggleList} 
+                  className="p-3 bg-white/5 hover:bg-white/10 rounded-full transition-all border border-white/10"
+                >
+                  {inMyList ? <BookmarkCheck className="w-6 h-6 text-primary fill-primary" /> : <Bookmark className="w-6 h-6 text-white" />}
+                </button>
               )}
             </div>
-          </>
+
+            {/* Genres */}
+            {content.genres?.length > 0 && (
+              <div className="flex flex-wrap gap-2 mb-6">
+                {content.genres.map((g) => (
+                  <span key={g} className="text-xs font-bold px-4 py-1.5 rounded-full bg-white/5 border border-white/10 text-white/80 hover:bg-white/10 transition-colors">
+                    {getGenreName(g)}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {/* Sinopsis Box */}
+            <div className="bg-[#111] border border-white/5 rounded-2xl p-6 mb-8">
+              <h3 className="text-sm font-bold uppercase tracking-widest text-white/40 mb-3">Sinopsis</h3>
+              <p className="text-base text-white/70 leading-relaxed font-light">
+                {content.overview || "No hay descripción disponible."}
+              </p>
+            </div>
+
+            {/* Credits Section */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+              {/* Creators/Directors */}
+              <div>
+                <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40 mb-4">
+                  {isMovie ? "Dirección" : "Creadores"}
+                </h3>
+                <div className="flex flex-wrap gap-4">
+                  {creators.length > 0 ? creators.map((person: any) => (
+                    <div key={person.id} className="text-sm font-medium text-white/90">
+                      {person.name}
+                    </div>
+                  )) : (
+                    <div className="text-sm text-white/30">N/A</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Main Cast */}
+              <div>
+                <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40 mb-4">
+                  Elenco Principal
+                </h3>
+                <div className="flex flex-wrap gap-3">
+                  {cast.length > 0 ? cast.map((person: any) => (
+                    <div key={person.id} className="group flex flex-col items-center gap-2">
+                      <Avatar className="w-12 h-12 border border-white/10 group-hover:scale-110 transition-transform">
+                        <AvatarImage src={getImageUrl(person.profile_path, "w185")} alt={person.name} className="object-cover" />
+                        <AvatarFallback className="bg-white/5 text-[10px]">{person.name[0]}</AvatarFallback>
+                      </Avatar>
+                      <span className="text-[10px] text-white/40 max-w-[60px] text-center truncate">{person.name}</span>
+                    </div>
+                  )) : (
+                    <div className="text-sm text-white/30">N/A</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ═══ RELATED SECTION ═══ */}
+        {related.length > 0 && (
+          <div className="pb-20 border-t border-white/5 pt-12">
+            <h2 className="text-2xl font-black mb-8 tracking-tight">También podría gustarte</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {related.slice(0, isMobile ? 4 : 12).map((item, i) => (
+                <ContentCard key={item.docId || item.id} content={item} index={i} grid />
+              ))}
+            </div>
+          </div>
         )}
       </div>
     </div>
