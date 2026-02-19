@@ -99,7 +99,7 @@ const Hero = ({ content, allContent = [] }: HeroProps) => {
 
             <div className="flex gap-3">
               <button
-                onClick={() => navigate(`/watch/${item.docId}`)}
+                onClick={() => navigate(`${contentUrl(item)}?autoplay=1`)}
                 className="flex items-center gap-2 px-7 py-3 bg-primary text-primary-foreground font-bold rounded-lg hover:bg-primary/90 transition-all hover:scale-105 active:scale-95 shadow-lg"
               >
                 <Play className="w-5 h-5 fill-current" />

@@ -1,4 +1,4 @@
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { useContentDetail, useContent } from "@/hooks/useContent";
 import Navbar from "@/components/layout/Navbar";
 import VideoPlayer from "@/components/content/VideoPlayer";
@@ -15,6 +15,7 @@ import { toast } from "@/hooks/use-toast";
 const ContentPage = () => {
   // Soporta /pelicula/:slug, /serie/:slug y /content/:id (legado)
   const { slug, id } = useParams();
+  const [searchParams] = useSearchParams();
   const rawParam = slug ?? id ?? "";
   const docId = slug ? extractDocId(rawParam) : rawParam;
   const navigate = useNavigate();
@@ -24,6 +25,24 @@ const ContentPage = () => {
   const [selectedSeason, setSelectedSeason] = useState<string | null>(null);
   const [playingUrl, setPlayingUrl] = useState<string | null>(null);
   const [inMyList, setInMyList] = useState(false);
+
+  // Autoplay: si viene ?autoplay=1, iniciar reproducción automáticamente
+  useEffect(() => {
+    if (searchParams.get("autoplay") === "1" && content) {
+      if (content.media_type === "movie" && content.video_url) {
+        setPlayingUrl(content.video_url);
+      } else if (content.media_type === "tv" && content.seasons) {
+        const firstSeasonKey = Object.keys(content.seasons)[0];
+        if (firstSeasonKey) {
+          const episodes = content.seasons[firstSeasonKey].episodes;
+          const firstEpKey = Object.keys(episodes)[0];
+          if (firstEpKey && episodes[firstEpKey].video_url) {
+            setPlayingUrl(episodes[firstEpKey].video_url);
+          }
+        }
+      }
+    }
+  }, [content, searchParams]);
 
   useEffect(() => {
     if (!user || !content) return;
