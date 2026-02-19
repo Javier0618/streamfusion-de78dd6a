@@ -118,9 +118,8 @@ const ContentPage = () => {
   const isMovie = content.media_type === "movie";
   const isSeries = content.media_type === "tv";
 
-  // TMDB Credits
-  const cast = content.credits?.cast?.slice(0, 10) || [];
-  const creators = content.credits?.crew?.filter((c: any) => c.job === "Director" || c.job === "Creator" || c.job === "Executive Producer").slice(0, 3) || [];
+  const cast = (content as any).credits?.cast?.slice(0, 10) || [];
+  const creators = (content as any).credits?.crew?.filter((c: any) => c.job === "Director" || c.job === "Creator" || c.job === "Executive Producer").slice(0, 3) || [];
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -316,7 +315,7 @@ const ContentPage = () => {
                   {cast.length > 0 ? cast.map((person: any) => (
                     <div key={person.id} className="group flex flex-col items-center gap-2">
                       <Avatar className="w-12 h-12 border border-white/10 group-hover:scale-110 transition-transform">
-                        <AvatarImage src={getImageUrl(person.profile_path, "w185")} alt={person.name} className="object-cover" />
+                        <AvatarImage src={getImageUrl(person.profile_path, "w200")} alt={person.name} className="object-cover" />
                         <AvatarFallback className="bg-white/5 text-[10px]">{person.name[0]}</AvatarFallback>
                       </Avatar>
                       <span className="text-[10px] text-white/40 max-w-[60px] text-center truncate">{person.name}</span>

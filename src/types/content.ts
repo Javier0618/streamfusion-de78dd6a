@@ -19,6 +19,25 @@ export interface DisplayOptions {
   platforms: string[];
 }
 
+export interface Cast {
+  id: number;
+  name: string;
+  character: string;
+  profile_path: string | null;
+}
+
+export interface Crew {
+  id: number;
+  name: string;
+  job: string;
+  department: string;
+}
+
+export interface Credits {
+  cast: Cast[];
+  crew: Crew[];
+}
+
 export interface Content {
   id: number;
   media_type: "movie" | "tv";
@@ -36,6 +55,7 @@ export interface Content {
   imported_by: string;
   imported_at: Timestamp;
   docId?: string;
+  credits?: Credits;
 }
 
 export interface Message {
