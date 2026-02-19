@@ -50,12 +50,17 @@ export const importContent = async (data: Omit<Content, "docId">, tmdbId: number
 export const getContentCollection = () => collection(db, "content");
 
 export const fetchAllContent = async (): Promise<Content[]> => {
-  const snap = await getDocs(getContentCollection());
+  const q = query(getContentCollection(), orderBy("imported_at", "desc"));
+  const snap = await getDocs(q);
   return snap.docs.map((d) => ({ ...d.data(), docId: d.id } as Content));
 };
 
 export const fetchContentByType = async (type: "movie" | "tv"): Promise<Content[]> => {
-  const q = query(getContentCollection(), where("media_type", "==", type));
+  const q = query(
+    getContentCollection(),
+    where("media_type", "==", type),
+    orderBy("imported_at", "desc")
+  );
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ ...d.data(), docId: d.id } as Content));
 };
