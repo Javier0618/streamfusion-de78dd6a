@@ -3,7 +3,7 @@ import { useContentDetail, useContent } from "@/hooks/useContent";
 import Navbar from "@/components/layout/Navbar";
 import VideoPlayer from "@/components/content/VideoPlayer";
 import ContentCard from "@/components/home/ContentCard";
-import { Play, Star, Calendar, BookmarkPlus, BookmarkCheck, Clock, Bookmark } from "lucide-react";
+import { Play, Star, Calendar, BookmarkPlus, BookmarkCheck, Clock, Bookmark, Film } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
