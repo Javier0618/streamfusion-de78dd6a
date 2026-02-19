@@ -1,4 +1,22 @@
+import { useMemo } from "react";
+import Hero from "@/components/home/Hero";
+import ContentCarousel from "@/components/home/ContentCarousel";
+import PlatformFilter from "@/components/home/PlatformFilter";
+import Navbar from "@/components/layout/Navbar";
+import { useContent, useInfiniteContent } from "@/hooks/useContent";
+import { getGenreName } from "@/lib/genres";
+import { useWebConfig } from "@/hooks/useWebConfig";
 
+const Index = () => {
+  const { 
+    data, 
+    isLoading: loadingInfinite,
+  } = useInfiniteContent(undefined, 50);
+
+  const { content, loading: loadingAll } = useContent();
+  const { data: webConfig } = useWebConfig();
+
+  const loading = loadingAll && loadingInfinite;
 
   const heroContent = useMemo(() => {
     if (content.length === 0) return null;
@@ -70,6 +88,9 @@
       <Navbar />
       <Hero content={heroContent} allContent={content} />
 
+      <div className="relative z-10 pb-16">
+        <PlatformFilter content={content} visiblePlatforms={webConfig?.visiblePlatforms} />
+        {isCategoryVisible("enEstreno") && enEstreno.length > 0 && <ContentCarousel title="En Estreno/Emisión" items={enEstreno.slice(0, sections.enEstreno)} />}
         {isCategoryVisible("recienAgregado") && recienAgregado.length > 0 && <ContentCarousel title="Recién Agregado" items={recienAgregado.slice(0, sections.recienAgregado)} />}
         {isCategoryVisible("peliculas") && movies.length > 0 && <ContentCarousel title="Películas Populares" items={movies.slice(0, sections.peliculasPopulares)} viewAllLink="/category/movies" />}
         {isCategoryVisible("series") && series.length > 0 && <ContentCarousel title="Series Populares" items={series.slice(0, sections.seriesPopulares)} viewAllLink="/category/series" />}
