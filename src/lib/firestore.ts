@@ -73,7 +73,7 @@ export const fetchContentByTypePaginated = async (
     orderBy("imported_at", "desc"),
     limit(pageSize)
   );
-  if (lastDoc) {
+  if (lastDoc && lastDoc.exists && lastDoc.exists()) {
     q = query(
       getContentCollection(),
       where("media_type", "==", type),
@@ -99,7 +99,7 @@ export const searchContentInFirestore = async (searchText: string): Promise<Cont
 
 export const fetchContentPaginated = async (pageSize: number, lastDoc?: QueryDocumentSnapshot): Promise<{ content: Content[], lastVisible: QueryDocumentSnapshot | null }> => {
   let q = query(getContentCollection(), orderBy("imported_at", "desc"), limit(pageSize));
-  if (lastDoc) {
+  if (lastDoc && lastDoc.exists && lastDoc.exists()) {
     q = query(getContentCollection(), orderBy("imported_at", "desc"), startAfter(lastDoc), limit(pageSize));
   }
   const snap = await getDocs(q);
