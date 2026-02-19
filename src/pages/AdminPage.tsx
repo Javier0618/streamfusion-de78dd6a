@@ -20,6 +20,8 @@ import {
   fetchSplashConfig,
   updateSplashConfig,
   importContent,
+  fetchContentPaginated,
+  fetchUsersPaginated,
 } from "@/lib/firestore";
 import {
   searchTmdb,
