@@ -157,11 +157,149 @@ const ContentPage = () => {
                 </div>
               </div>
             )}
+
+            {/* Reordered info for mobile (under player) */}
+            <div className="mt-6 lg:hidden">
+              <div className="flex items-start justify-between gap-4 mb-4">
+                <div>
+                  <h1 className="text-2xl md:text-4xl font-black mb-2 tracking-tight">{content.title}</h1>
+                  <div className="flex flex-wrap items-center gap-3 text-white/60 text-sm">
+                    {content.vote_average != null && (
+                      <div className="flex items-center gap-1">
+                        <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                        <span className="font-bold text-white">{content.vote_average.toFixed(1)}</span>
+                      </div>
+                    )}
+                    {year && (
+                      <div className="flex items-center gap-1">
+                        <Calendar className="w-4 h-4" />
+                        <span>{year}</span>
+                      </div>
+                    )}
+                    {isSeries && seasons.length > 0 && (
+                      <div className="flex items-center gap-1">
+                        <Clock className="w-4 h-4" />
+                        <span>{seasons.length} {seasons.length === 1 ? 'Temporada' : 'Temporadas'}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                {user && (
+                  <button 
+                    onClick={handleToggleList} 
+                    className="p-2.5 bg-white/5 hover:bg-white/10 rounded-full transition-all border border-white/10"
+                  >
+                    {inMyList ? <BookmarkCheck className="w-5 h-5 text-primary fill-primary" /> : <Bookmark className="w-5 h-5 text-white" />}
+                  </button>
+                )}
+              </div>
+
+              {/* Categories/Genres */}
+              {content.genres?.length > 0 && (
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {content.genres.map((g) => (
+                    <span key={g} className="text-[10px] font-bold px-3 py-1 rounded-full bg-white/5 border border-white/10 text-white/60">
+                      {getGenreName(g)}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              {/* Synopsis */}
+              <div className="mb-6">
+                <h3 className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2">Sinopsis</h3>
+                <p className="text-sm text-white/70 leading-relaxed line-clamp-4">
+                  {content.overview || "No hay descripción disponible."}
+                </p>
+              </div>
+
+              {/* Credits */}
+              <div className="space-y-4 mb-8">
+                <div>
+                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-1">
+                    {isMovie ? "Dirección" : "Creadores"}
+                  </h3>
+                  <div className="text-xs text-white/80">
+                    {creators.length > 0 ? creators.map((p: any) => p.name).join(", ") : "N/A"}
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-[10px] font-bold uppercase tracking-widest text-white/40 mb-2">Reparto</h3>
+                  <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                    {cast.map((person: any) => (
+                      <div key={person.id} className="flex-shrink-0 flex flex-col items-center gap-1">
+                        <Avatar className="w-10 h-10 border border-white/10">
+                          <AvatarImage src={getImageUrl(person.profile_path, "w200")} alt={person.name} className="object-cover" />
+                          <AvatarFallback className="bg-white/5 text-[8px]">{person.name[0]}</AvatarFallback>
+                        </Avatar>
+                        <span className="text-[8px] text-white/40 max-w-[50px] text-center truncate">{person.name}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Seasons and Episodes for mobile (under info) */}
+              {isSeries && seasons.length > 0 && (
+                <div className="mb-8">
+                  <h3 className="text-sm font-bold mb-4 flex items-center gap-2">
+                    <Film className="w-4 h-4 text-primary" /> Temporadas y Episodios
+                  </h3>
+                  <div className="flex gap-2 overflow-x-auto pb-4 mb-4 scrollbar-hide">
+                    {seasons.map(([key, season]) => (
+                      <button
+                        key={key}
+                        onClick={() => { setSelectedSeason(key); setPlayingUrl(null); }}
+                        className={`px-4 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap ${
+                          activeSeason === key
+                            ? "bg-primary text-primary-foreground shadow-lg shadow-primary/20"
+                            : "bg-white/5 text-white/60 hover:bg-white/10"
+                        }`}
+                      >
+                        Temporada {season.season_number}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="space-y-3">
+                    {episodes.map(([epKey, ep]) => (
+                      <div
+                        key={epKey}
+                        onClick={() => setPlayingUrl(ep.video_url)}
+                        className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all border ${
+                          playingUrl === ep.video_url ? "bg-primary/10 border-primary/30" : "bg-white/5 border-transparent"
+                        }`}
+                      >
+                        <div className="relative flex-shrink-0 w-28 aspect-video rounded-md overflow-hidden bg-black/40">
+                          {ep.still_path ? (
+                            <img src={getImageUrl(ep.still_path, "w300")} alt={ep.name} className="w-full h-full object-cover" />
+                          ) : (
+                            <div className="w-full h-full bg-white/5 flex items-center justify-center">
+                              <Play className="w-4 h-4 text-white/20" />
+                            </div>
+                          )}
+                          {playingUrl === ep.video_url && (
+                            <div className="absolute inset-0 flex items-center justify-center bg-primary/40 backdrop-blur-[1px]">
+                              <Play className="w-6 h-6 text-white fill-current" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className={`text-[10px] font-bold uppercase tracking-wider ${playingUrl === ep.video_url ? "text-primary" : "text-white/40"}`}>
+                            Episodio {ep.episode_number}
+                          </p>
+                          <p className="text-sm font-medium text-white/90 truncate">{ep.name || `Episodio ${ep.episode_number}`}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
-          {/* Sidebar (Series only) */}
+          {/* Sidebar (Series only) - Hidden on mobile */}
           {isSeries && seasons.length > 0 && (
-            <div className="lg:w-[350px] xl:w-[400px] flex-shrink-0 bg-[#0a0a0a] border border-white/5 rounded-xl flex flex-col h-[auto] lg:h-[450px] xl:h-[500px]">
+            <div className="hidden lg:flex lg:w-[350px] xl:w-[400px] flex-shrink-0 bg-[#0a0a0a] border border-white/5 rounded-xl flex-col h-[auto] lg:h-[450px] xl:h-[500px]">
               <div className="p-4 border-b border-white/5">
                 <h3 className="font-bold text-sm mb-3 text-white/60">Temporadas</h3>
                 <div className="flex gap-2 flex-wrap">
@@ -208,7 +346,7 @@ const ContentPage = () => {
                       <p className={`text-[10px] font-bold uppercase tracking-wider ${playingUrl === ep.video_url ? "text-primary" : "text-white/40"}`}>
                         Episodio {ep.episode_number}
                       </p>
-                      <p className="text-sm font-medium text-white/90 truncate">Episodio {ep.episode_number}</p>
+                      <p className="text-sm font-medium text-white/90 truncate">{ep.name || `Episodio ${ep.episode_number}`}</p>
                     </div>
                   </div>
                 ))}
@@ -217,8 +355,8 @@ const ContentPage = () => {
           )}
         </div>
 
-        {/* ═══ INFO SECTION ═══ */}
-        <div className="flex flex-col md:flex-row gap-8 mb-12">
+        {/* ═══ INFO SECTION (Desktop) ═══ */}
+        <div className="hidden lg:flex flex-row gap-8 mb-12">
           {/* Poster Column */}
           <div className="w-48 md:w-64 flex-shrink-0">
             <motion.img 
@@ -240,7 +378,6 @@ const ContentPage = () => {
                     <div className="flex items-center gap-1">
                       <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
                       <span className="font-bold text-white">{content.vote_average.toFixed(1)}</span>
-                      <span className="text-xs">(834)</span>
                     </div>
                   )}
                   {year && (
