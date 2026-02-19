@@ -460,11 +460,10 @@ const AdminPage = () => {
     try {
       if (t === "tmdb" || t === "content") {
         if (contentList.length === 0) {
-          const { content: c, lastVisible } = await fetchContentPaginated(30);
-          setContentList(c);
-          setLastContentDoc(lastVisible);
-          setHasMoreContent(c.length === 30);
-          setImportedIds(new Set(c.map(item => item.id)));
+          const content = await fetchAllContent();
+          setContentList(content);
+          setHasMoreContent(false);
+          setImportedIds(new Set(content.map(item => item.id)));
         }
       }
       if (t === "users") {
@@ -514,33 +513,26 @@ const AdminPage = () => {
   };
 
   // ── Content Search ──
-  useEffect(() => {
-    const delayDebounceFn = setTimeout(async () => {
-      if (tab !== "content") return;
-      
-      if (!contentSearch.trim()) {
-        setIsSearchingContent(false);
-        // Reset to first page of paginated view if search is cleared
-        const { content: c, lastVisible } = await fetchContentPaginated(30);
-        setContentList(c);
-        setLastContentDoc(lastVisible);
-        setHasMoreContent(c.length === 30);
-        return;
-      }
+  const filteredContent = useMemo(() => {
+    const search = contentSearch.toLowerCase().trim();
+    if (!search) return contentList;
+    return contentList.filter(c => 
+      c.title?.toLowerCase().includes(search) || 
+      c.original_title?.toLowerCase().includes(search)
+    );
+  }, [contentList, contentSearch]);
 
-      setIsSearchingContent(true);
-      try {
-        const { searchContentInFirestore } = await import("@/lib/firestore");
-        const results = await searchContentInFirestore(contentSearch);
-        setContentList(results);
-        setHasMoreContent(false); // Disable infinite scroll during search
-      } catch (e) {
-        console.error("Error searching content:", e);
-      }
-    }, 500);
+  const filteredUsers = useMemo(() => users.filter(u =>
+    (u.name || "").toLowerCase().includes(userSearch.toLowerCase()) ||
+    (u.email || "").toLowerCase().includes(userSearch.toLowerCase())
+  ), [users, userSearch]);
 
-    return () => clearTimeout(delayDebounceFn);
-  }, [contentSearch, tab]);
+  const { displayed: displayedContent, sentinelRef: contentSentinel, isLoadingMore: loadingContent } = useInfiniteScroll(
+    filteredContent, 
+    30, 
+    undefined, 
+    false
+  );
 
   // ── Content delete ──
   const handleDeleteContent = async (docId: string) => {
@@ -607,20 +599,6 @@ const AdminPage = () => {
     { id: "analytics", label: "Estadísticas", icon: <BarChart3 className="w-4 h-4" /> },
     { id: "settings", label: "Configuración", icon: <Settings className="w-4 h-4" /> },
   ];
-
-  const filteredContent = useMemo(() => contentList, [contentList]);
-
-  const filteredUsers = useMemo(() => users.filter(u =>
-    (u.name || "").toLowerCase().includes(userSearch.toLowerCase()) ||
-    (u.email || "").toLowerCase().includes(userSearch.toLowerCase())
-  ), [users, userSearch]);
-
-  const { displayed: displayedContent, sentinelRef: contentSentinel, isLoadingMore: loadingContent } = useInfiniteScroll(
-    filteredContent, 
-    30, 
-    contentSearch.trim() ? undefined : loadMoreContent, 
-    true
-  );
   
   const { displayed: displayedUsers, sentinelRef: usersSentinel, isLoadingMore: loadingUsers } = useInfiniteScroll(
     filteredUsers, 
@@ -804,11 +782,6 @@ const AdminPage = () => {
                       placeholder="Buscar contenido..."
                       className={inputCls + " pl-9"}
                     />
-                    {isSearchingContent && (
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                        <RefreshCw className="w-4 h-4 animate-spin text-primary" />
-                      </div>
-                    )}
                   </div>
                   <span className="text-sm text-muted-foreground whitespace-nowrap">{filteredContent.length} títulos</span>
                 </div>
