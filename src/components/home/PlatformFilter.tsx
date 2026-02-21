@@ -80,8 +80,8 @@ const PlatformFilter = ({ content, visiblePlatforms }: PlatformFilterProps) => {
   if (availablePlatforms.length === 0) return null;
 
   return (
-    <div className="w-full bg-card/60 border-y border-border/40 backdrop-blur-sm">
-      <div className="flex items-center justify-center gap-2 md:gap-0 px-4 md:px-12 overflow-x-auto scrollbar-hide">
+    <div className="w-full bg-card/60 border-y border-border/40 backdrop-blur-sm overflow-hidden">
+      <div className="flex items-center justify-center gap-0 px-4 py-4 overflow-x-auto scrollbar-hide flex-nowrap min-w-full">
         {availablePlatforms.map((platform, i) => (
           <motion.button
             key={platform.id}
@@ -89,13 +89,15 @@ const PlatformFilter = ({ content, visiblePlatforms }: PlatformFilterProps) => {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.4, delay: i * 0.08 }}
             onClick={() => navigate(`/category/${encodeURIComponent(platform.id)}`)}
-            className="group flex items-center justify-center px-8 md:px-12 py-4 text-muted-foreground hover:text-foreground transition-all duration-300 border-r border-border/30 last:border-r-0 flex-shrink-0"
+            className="group flex items-center justify-center px-3 md:px-8 text-muted-foreground hover:text-foreground transition-all duration-300 flex-shrink-0"
           >
-            <span className="opacity-60 group-hover:opacity-100 transition-opacity duration-300 scale-95 group-hover:scale-100">
+            <span className="opacity-80 group-hover:opacity-100 transition-opacity duration-300 scale-100 group-hover:scale-110">
               {platformImages?.[platform.id] ? (
-                <img src={platformImages[platform.id]} alt={platform.label} className="h-6 md:h-7 object-contain" />
+                <img src={platformImages[platform.id]} alt={platform.label} className="h-6 md:h-8 object-contain" />
               ) : (
-                platform.logo
+                <div className="h-6 md:h-8 flex items-center">
+                  {platform.logo}
+                </div>
               )}
             </span>
           </motion.button>

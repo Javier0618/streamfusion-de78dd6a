@@ -1,12 +1,14 @@
 import { useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import Navbar from "@/components/layout/Navbar";
 import ContentCard from "@/components/home/ContentCard";
 import { useContent } from "@/hooks/useContent";
 import { useInfiniteScroll } from "@/hooks/useInfiniteScroll";
-import { Loader2 } from "lucide-react";
+import { Loader2, ArrowLeft } from "lucide-react";
 
 const AnimesPage = () => {
   const { content, loading } = useContent();
+  const navigate = useNavigate();
 
   const filtered = useMemo(
     () => content.filter((c) => c.display_options?.main_sections?.includes("animes")),
@@ -19,7 +21,15 @@ const AnimesPage = () => {
     <div className="min-h-screen bg-background">
       <Navbar />
       <div className="pt-24 pb-16 px-4 md:px-12">
-        <h1 className="text-2xl md:text-3xl font-extrabold mb-8">Animes</h1>
+        <div className="flex items-center justify-between mb-8">
+          <h1 className="text-2xl md:text-3xl font-extrabold">Animes</h1>
+          <button 
+            onClick={() => navigate("/")}
+            className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 hover:bg-white/10 border border-white/10 transition-all text-sm font-bold"
+          >
+            <ArrowLeft className="w-4 h-4" /> Inicio
+          </button>
+        </div>
         {loading ? (
           <div className="grid grid-cols-3 md:grid-cols-6 gap-3 md:gap-4">
             {Array.from({ length: 18 }).map((_, i) => (

@@ -20,22 +20,22 @@ const Hero = ({ content, allContent = [] }: HeroProps) => {
       return content ? [content] : [];
     }
 
-    // Get the 4 most recent items
-    const mostRecent = withBackdrop.slice(0, 4);
+    // Get the 6 most recent items
+    const mostRecent = [...withBackdrop.slice(0, 6)];
+    
+    // Get all other items for random selection
+    const others = withBackdrop.slice(6);
+    
+    // Pick 6 random items from the rest (or all if less than 6)
+    const randomItems = others.length > 0 
+      ? [...others].sort(() => 0.5 - Math.random()).slice(0, 6)
+      : [];
 
-    // Get the rest of the items to pick 4 random ones
-    const remaining = withBackdrop.slice(4);
+    // Combine them
+    const combined = [...mostRecent, ...randomItems];
 
-    let randomRecent: Content[] = [];
-    if (remaining.length > 0) {
-      // Shuffle remaining and take 4
-      randomRecent = [...remaining]
-        .sort(() => 0.5 - Math.random())
-        .slice(0, 4);
-    }
-
-    // Combine them (total up to 8)
-    return [...mostRecent, ...randomRecent];
+    // Shuffle the combined list completely to mix recent and random items
+    return combined.sort(() => 0.5 - Math.random()).slice(0, 10);
   }, [allContent, content]);
 
   const [current, setCurrent] = useState(0);

@@ -19,6 +19,7 @@ import SearchPage from "./pages/SearchPage";
 import AnimesPage from "./pages/AnimesPage";
 import DoramasPage from "./pages/DoramasPage";
 import NotFound from "./pages/NotFound";
+import { FaAndroid } from "react-icons/fa";
 
 const queryClient = new QueryClient();
 
@@ -29,25 +30,42 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/movies" element={<MoviesPage />} />
-            <Route path="/series" element={<SeriesPage />} />
-            <Route path="/animes" element={<AnimesPage />} />
-            <Route path="/doramas" element={<DoramasPage />} />
-            <Route path="/category/:type" element={<CategoryPage />} />
-            <Route path="/pelicula/:slug" element={<ContentPage />} />
-            <Route path="/serie/:slug" element={<ContentPage />} />
-            {/* Backward-compat redirect */}
-            <Route path="/content/:id" element={<ContentPage />} />
-            <Route path="/watch/:id" element={<WatchPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/messages" element={<MessagesPage />} />
-            <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
-            <Route path="/search" element={<SearchPage />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <div className="min-h-screen">
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/movies" element={<MoviesPage />} />
+              <Route path="/series" element={<SeriesPage />} />
+              <Route path="/animes" element={<AnimesPage />} />
+              <Route path="/doramas" element={<DoramasPage />} />
+              <Route path="/category/:type" element={<CategoryPage />} />
+              <Route path="/pelicula/:slug" element={<ContentPage />} />
+              <Route path="/serie/:slug" element={<ContentPage />} />
+              {/* Backward-compat redirect */}
+              <Route path="/content/:id" element={<ContentPage />} />
+              <Route path="/watch/:id" element={<WatchPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/messages" element={<MessagesPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/admin" element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
+              <Route path="/search" element={<SearchPage />} />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+
+            {/* Android App Link - Fixed Bottom Left */}
+            <a
+              href="https://streamfusion.top/down/AI2KOBT1bNck.apk"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="fixed bottom-6 left-6 z-[60] flex items-center justify-center w-14 h-14 bg-[#3DDC84] rounded-full shadow-lg transition-all hover:scale-110 active:scale-95 group hover:shadow-[#3DDC84]/20"
+              title="Descargar App Android"
+              data-testid="link-android-app"
+            >
+              <FaAndroid 
+                className="w-8 h-8 text-white group-hover:animate-pulse" 
+                data-testid="icon-android"
+              />
+            </a>
+          </div>
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>

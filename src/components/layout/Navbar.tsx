@@ -38,7 +38,7 @@ const Navbar = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="absolute inset-0 z-50 flex items-center bg-background/98 backdrop-blur-md px-4 md:px-12"
+            className="absolute inset-0 z-50 flex items-center bg-black px-4 md:px-12"
             style={{ height: "64px" }}
           >
             <form onSubmit={handleSearchSubmit} className="flex-1 flex items-center gap-3 h-full">
@@ -65,13 +65,17 @@ const Navbar = () => {
 
       <div className="flex items-center justify-between px-4 md:px-12 py-4">
         <div className="flex items-center gap-8">
-          <Link to="/" className="flex items-center">
-            {logoUrl ? (
-              <img src={logoUrl} alt="Logo" className="h-8 md:h-9 object-contain" />
-            ) : (
-              <span className="text-2xl font-extrabold tracking-tight text-primary">StreamFusion</span>
-            )}
-          </Link>
+<Link to="/" className="flex items-center">
+  {logoUrl ? (
+    <img src={logoUrl} alt="Logo" className="h-8 md:h-9 object-contain" />
+  ) : (
+    <img
+      src="https://raw.githubusercontent.com/Javier0618/Imagenes/main/SFusionLogo.png"
+      alt="StreamFusion"
+      className="h-8 md:h-9 object-contain"
+    />
+  )}
+</Link>
           <div className="hidden md:flex items-center gap-6 text-sm font-medium text-secondary-foreground">
             <Link to="/" className="hover:text-foreground transition-colors">Inicio</Link>
             <Link to="/movies" className="hover:text-foreground transition-colors">Películas</Link>

@@ -3,9 +3,9 @@ import { useContentDetail, useContent } from "@/hooks/useContent";
 import Navbar from "@/components/layout/Navbar";
 import VideoPlayer from "@/components/content/VideoPlayer";
 import ContentCard from "@/components/home/ContentCard";
-import { Play, Star, Calendar, BookmarkPlus, BookmarkCheck, Clock, Bookmark, Film } from "lucide-react";
+import { Play, Star, Calendar, BookmarkPlus, BookmarkCheck, Clock, Bookmark, Film, ChevronLeft, ChevronRight } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { getBackdropUrl, getImageUrl } from "@/lib/image";
 import { extractDocId } from "@/lib/slug";
@@ -28,6 +28,14 @@ const ContentPage = () => {
   const [selectedSeason, setSelectedSeason] = useState<string | null>(null);
   const [playingUrl, setPlayingUrl] = useState<string | null>(null);
   const [inMyList, setInMyList] = useState(false);
+  const playerRef = useRef<HTMLDivElement>(null);
+
+  // Helper to scroll to player
+  const scrollToPlayer = () => {
+    if (playerRef.current) {
+      playerRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+  };
 
   // Autoplay
   useEffect(() => {
@@ -114,7 +122,18 @@ const ContentPage = () => {
   const episodes = activeSeason && content.seasons?.[activeSeason]?.episodes
     ? Object.entries(content.seasons[activeSeason].episodes)
         .filter(([_, ep]) => !!ep.video_url) // Only show episodes with video_url
+        .sort((a, b) => (a[1].episode_number || 0) - (b[1].episode_number || 0))
     : [];
+
+  const currentIndex = episodes.findIndex(([_, ep]) => ep.video_url === playingUrl);
+  const prevEpisode = currentIndex > 0 ? episodes[currentIndex - 1][1] : null;
+  const nextEpisode = currentIndex !== -1 && currentIndex < episodes.length - 1 ? episodes[currentIndex + 1][1] : null;
+
+  const handleEpisodeSelect = (url: string) => {
+    setPlayingUrl(url);
+    scrollToPlayer();
+  };
+
   const year = content.release_date?.split("-")[0];
   const isMovie = content.media_type === "movie";
   const isSeries = content.media_type === "tv";
@@ -130,9 +149,38 @@ const ContentPage = () => {
         {/* ═══ VIDEO SECTION ═══ */}
         <div className="flex flex-col lg:flex-row gap-6 mb-8">
           {/* Main Player Area */}
-          <div className="flex-1 min-w-0">
+          <div className="flex-1 min-w-0" ref={playerRef}>
             {playingUrl ? (
-              <VideoPlayer url={playingUrl} title={content.title} />
+              <>
+                <VideoPlayer url={playingUrl} title={content.title} />
+                {/* Mobile/Tablet Next/Prev Buttons */}
+                {isSeries && (prevEpisode || nextEpisode) && (
+                  <div className="flex items-center justify-between gap-4 mt-4 lg:hidden">
+                    <button
+                      disabled={!prevEpisode}
+                      onClick={() => prevEpisode && handleEpisodeSelect(prevEpisode.video_url)}
+                      className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all border ${
+                        prevEpisode 
+                          ? "bg-white/5 border-white/10 text-white hover:bg-white/10 active:scale-95" 
+                          : "opacity-30 border-transparent text-white/40 cursor-not-allowed"
+                      }`}
+                    >
+                      <ChevronLeft className="w-4 h-4" /> Anterior
+                    </button>
+                    <button
+                      disabled={!nextEpisode}
+                      onClick={() => nextEpisode && handleEpisodeSelect(nextEpisode.video_url)}
+                      className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-sm transition-all border ${
+                        nextEpisode 
+                          ? "bg-primary border-primary/20 text-primary-foreground hover:opacity-90 active:scale-95 shadow-lg shadow-primary/20" 
+                          : "opacity-30 border-transparent text-white/40 cursor-not-allowed"
+                      }`}
+                    >
+                      Siguiente <ChevronRight className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+              </>
             ) : (
               <div
                 className="relative w-full aspect-video bg-muted rounded-xl overflow-hidden cursor-pointer group shadow-2xl shadow-black/50"
@@ -264,7 +312,7 @@ const ContentPage = () => {
                     {episodes.map(([epKey, ep]) => (
                       <div
                         key={epKey}
-                        onClick={() => setPlayingUrl(ep.video_url)}
+                        onClick={() => handleEpisodeSelect(ep.video_url)}
                         className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all border ${
                           playingUrl === ep.video_url ? "bg-primary/10 border-primary/30" : "bg-white/5 border-transparent"
                         }`}
@@ -323,7 +371,7 @@ const ContentPage = () => {
                 {episodes.map(([epKey, ep]) => (
                   <div
                     key={epKey}
-                    onClick={() => setPlayingUrl(ep.video_url)}
+                    onClick={() => handleEpisodeSelect(ep.video_url)}
                     className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-all hover:bg-white/5 ${
                       playingUrl === ep.video_url ? "bg-primary/20 ring-1 ring-primary/30" : ""
                     }`}
@@ -433,7 +481,7 @@ const ContentPage = () => {
                 <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40 mb-4">
                   {isMovie ? "Dirección" : "Creadores"}
                 </h3>
-                <div className="flex flex-wrap gap-4">
+                <div className="flex flex-wrap gap-4 mb-8">
                   {creators.length > 0 ? creators.map((person: any) => (
                     <div key={person.id} className="text-sm font-medium text-white/90">
                       {person.name}
@@ -442,10 +490,7 @@ const ContentPage = () => {
                     <div className="text-sm text-white/30">N/A</div>
                   )}
                 </div>
-              </div>
 
-              {/* Main Cast */}
-              <div>
                 <h3 className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/40 mb-4">
                   Elenco Principal
                 </h3>
@@ -471,8 +516,8 @@ const ContentPage = () => {
         {related.length > 0 && (
           <div className="pb-20 border-t border-white/5 pt-12">
             <h2 className="text-2xl font-black mb-8 tracking-tight">También podría gustarte</h2>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              {related.slice(0, isMobile ? 4 : 12).map((item, i) => (
+            <div className="grid grid-cols-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {related.slice(0, 6).map((item, i) => (
                 <ContentCard key={item.docId || item.id} content={item} index={i} grid />
               ))}
             </div>
