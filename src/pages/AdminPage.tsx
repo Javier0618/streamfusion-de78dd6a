@@ -475,8 +475,9 @@ const AdminPage = () => {
         }
       }
       if (t === "messages") {
-        const m = await fetchAllMessages();
+        const [m, allUsers] = await Promise.all([fetchAllMessages(), fetchAllUsers()]);
         setMessages(m);
+        if (users.length === 0) setUsers(allUsers);
       }
       if (t === "sections") {
         const s = await fetchHomeSections();
@@ -947,12 +948,17 @@ const AdminPage = () => {
             {/* ══ MESSAGES TAB ═════════════════════════════════════════════════ */}
             {tab === "messages" && (
               <div className="space-y-3">
-                {messages.map(msg => (
+                {messages.map(msg => {
+                  const fromUser = users.find(u => u.id === msg.from);
+                  const toUser = users.find(u => u.id === msg.to);
+                  const fromName = fromUser?.name || fromUser?.email || msg.from;
+                  const toName = msg.to === "admin" ? "admin" : (toUser?.name || toUser?.email || msg.to);
+                  return (
                   <div key={msg.id} className="bg-card rounded-lg p-4 border border-border">
                     <div className="flex justify-between items-start mb-2 flex-wrap gap-2">
                       <div>
-                        <span className="text-xs text-muted-foreground">De: <span className="text-foreground">{msg.from}</span></span>
-                        <span className="text-xs text-muted-foreground ml-3">A: <span className="text-foreground">{msg.to}</span></span>
+                        <span className="text-xs text-muted-foreground">De: <span className="text-foreground">{fromName}</span></span>
+                        <span className="text-xs text-muted-foreground ml-3">A: <span className="text-foreground">{toName}</span></span>
                       </div>
                       <div className="flex gap-2 items-center">
                         <span className={`text-xs px-2 py-0.5 rounded ${msg.read ? "bg-primary/10 text-primary" : "bg-accent text-accent-foreground"}`}>
@@ -986,7 +992,8 @@ const AdminPage = () => {
                       </div>
                     )}
                   </div>
-                ))}
+                  );
+                })}
                 {messages.length === 0 && (
                   <div className="text-center py-16 text-muted-foreground">
                     <MessageSquare className="w-12 h-12 mx-auto mb-4 opacity-30" />

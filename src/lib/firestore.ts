@@ -152,8 +152,7 @@ export const fetchHomeSections = async (): Promise<HomeSection[]> => {
 export const fetchMessages = async (userId: string): Promise<Message[]> => {
   const q = query(
     collection(db, "messages"),
-    where("to", "==", userId),
-    orderBy("createdAt", "desc")
+    where("to", "==", userId)
   );
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ ...d.data(), id: d.id } as Message));
@@ -162,8 +161,7 @@ export const fetchMessages = async (userId: string): Promise<Message[]> => {
 export const fetchSentMessages = async (userId: string): Promise<Message[]> => {
   const q = query(
     collection(db, "messages"),
-    where("from", "==", userId),
-    orderBy("createdAt", "desc")
+    where("from", "==", userId)
   );
   const snap = await getDocs(q);
   return snap.docs.map((d) => ({ ...d.data(), id: d.id } as Message));
