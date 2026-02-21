@@ -86,7 +86,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
-      <Hero content={heroContent} allContent={content} />
+      <Hero content={heroContent} allContent={content} heroConfig={webConfig?.heroSlider} />
 
       <div className="relative z-10 pb-16">
         <PlatformFilter content={content} visiblePlatforms={webConfig?.visiblePlatforms} />
