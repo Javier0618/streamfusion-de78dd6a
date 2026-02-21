@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import { useLocation } from "react-router-dom";
+import { useWebConfig } from "@/hooks/useWebConfig";
 
 declare global {
   interface Window {
@@ -7,8 +8,7 @@ declare global {
   }
 }
 
-const getPageTitle = (pathname: string): string => {
-  const base = "StreamFusion";
+const getPageTitle = (pathname: string, base: string): string => {
   if (pathname === "/") return `${base} - Tu lugar de entretenimiento`;
   if (pathname === "/movies") return `Películas - ${base}`;
   if (pathname === "/series") return `Series - ${base}`;
@@ -34,9 +34,11 @@ const getPageTitle = (pathname: string): string => {
 
 const AnalyticsTracker = () => {
   const location = useLocation();
+  const { data: webConfig } = useWebConfig();
+  const siteName = webConfig?.site_name || "StreamFusion";
 
   useEffect(() => {
-    const title = getPageTitle(location.pathname);
+    const title = getPageTitle(location.pathname, siteName);
     document.title = title;
 
     if (window.gtag) {
@@ -45,7 +47,7 @@ const AnalyticsTracker = () => {
         page_title: title,
       });
     }
-  }, [location]);
+  }, [location, siteName]);
 
   return null;
 };

@@ -9,10 +9,15 @@ import { contentUrl } from "@/lib/slug";
 interface HeroProps {
   content: Content | null;
   allContent?: Content[];
+  heroConfig?: { posters?: number; random?: number };
 }
 
-const Hero = ({ content, allContent = [] }: HeroProps) => {
+const Hero = ({ content, allContent = [], heroConfig }: HeroProps) => {
   const navigate = useNavigate();
+
+  const totalPosters = heroConfig?.posters || 8;
+  const randomCount = heroConfig?.random || 4;
+  const recentCount = Math.max(0, totalPosters - randomCount);
 
   const slides = useMemo(() => {
     const withBackdrop = allContent.filter((c) => c.backdrop_path);
@@ -20,23 +25,21 @@ const Hero = ({ content, allContent = [] }: HeroProps) => {
       return content ? [content] : [];
     }
 
-    // Get the 6 most recent items
-    const mostRecent = [...withBackdrop.slice(0, 6)];
+    // Get the most recent items
+    const mostRecent = [...withBackdrop.slice(0, recentCount)];
     
     // Get all other items for random selection
-    const others = withBackdrop.slice(6);
+    const others = withBackdrop.slice(recentCount);
     
-    // Pick 6 random items from the rest (or all if less than 6)
+    // Pick random items from the rest
     const randomItems = others.length > 0 
-      ? [...others].sort(() => 0.5 - Math.random()).slice(0, 6)
+      ? [...others].sort(() => 0.5 - Math.random()).slice(0, randomCount)
       : [];
 
-    // Combine them
+    // Combine and shuffle
     const combined = [...mostRecent, ...randomItems];
-
-    // Shuffle the combined list completely to mix recent and random items
-    return combined.sort(() => 0.5 - Math.random()).slice(0, 10);
-  }, [allContent, content]);
+    return combined.sort(() => 0.5 - Math.random()).slice(0, totalPosters);
+  }, [allContent, content, totalPosters, randomCount, recentCount]);
 
   const [current, setCurrent] = useState(0);
 
