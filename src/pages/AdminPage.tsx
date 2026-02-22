@@ -582,7 +582,8 @@ const AdminPage = () => {
 
   // ── Settings ──
   const handleSaveConfig = async () => {
-    await updateWebConfig(config);
+    const { _top10SearchResults, ...configToSave } = config;
+    await updateWebConfig(configToSave);
     toast({ title: "Guardado", description: "Configuración guardada" });
   };
 
@@ -1086,6 +1087,114 @@ const AdminPage = () => {
                     <div>
                       <label className="text-xs text-muted-foreground">Posters aleatorios en hero</label>
                       <input type="number" value={config.heroSlider?.random || 4} onChange={e => setConfig({ ...config, heroSlider: { ...(config.heroSlider || {}), random: Number(e.target.value) } })} className={inputCls} min={0} max={10} />
+                    </div>
+                  </div>
+
+                   {/* Top 10 Config */}
+                  <div className="mt-6 border-t border-border pt-4">
+                    <h3 className="text-sm font-semibold mb-3 flex items-center gap-2"><Star className="w-4 h-4" /> Top 10 Más Vistos</h3>
+                    <div className="space-y-3">
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <span className="text-sm font-medium">Activar Top 10</span>
+                        <div
+                          onClick={() => setConfig({ ...config, top10: { ...(config.top10 || {}), enabled: !(config.top10?.enabled ?? true) } })}
+                          className={`relative w-12 h-6 rounded-full transition-colors ${(config.top10?.enabled ?? true) ? "bg-primary" : "bg-secondary"}`}
+                        >
+                          <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${(config.top10?.enabled ?? true) ? "translate-x-7" : "translate-x-1"}`} />
+                        </div>
+                      </label>
+                      <div>
+                        <label className="text-xs text-muted-foreground">Título de la sección</label>
+                        <input value={config.top10?.title || "Top 10 Más Vistos"} onChange={e => setConfig({ ...config, top10: { ...(config.top10 || {}), title: e.target.value } })} className={inputCls} />
+                      </div>
+                      <label className="flex items-center gap-3 cursor-pointer">
+                        <span className="text-sm font-medium">Selección aleatoria</span>
+                        <div
+                          onClick={() => setConfig({ ...config, top10: { ...(config.top10 || {}), random: !(config.top10?.random ?? true) } })}
+                          className={`relative w-12 h-6 rounded-full transition-colors ${(config.top10?.random ?? true) ? "bg-primary" : "bg-secondary"}`}
+                        >
+                          <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${(config.top10?.random ?? true) ? "translate-x-7" : "translate-x-1"}`} />
+                        </div>
+                      </label>
+                      <div>
+                        <label className="text-xs text-muted-foreground">Selección manual — buscar y agregar contenido al Top 10</label>
+                        <div className="flex gap-2 mt-1">
+                          <input
+                            id="top10-search"
+                            placeholder="Buscar título..."
+                            className={inputCls}
+                            onKeyDown={e => {
+                              if (e.key === "Enter") {
+                                const val = (e.target as HTMLInputElement).value.toLowerCase();
+                                if (!val) return;
+                                const found = contentList.filter(c => c.title?.toLowerCase().includes(val) || c.original_title?.toLowerCase().includes(val));
+                                setConfig(prev => ({ ...prev, _top10SearchResults: found }));
+                              }
+                            }}
+                          />
+                          <button
+                            onClick={() => {
+                              const el = document.getElementById("top10-search") as HTMLInputElement;
+                              const val = el?.value?.toLowerCase();
+                              if (!val) return;
+                              const found = contentList.filter(c => c.title?.toLowerCase().includes(val) || c.original_title?.toLowerCase().includes(val));
+                              setConfig(prev => ({ ...prev, _top10SearchResults: found }));
+                            }}
+                            className="px-3 py-2 bg-primary text-primary-foreground rounded-md text-sm hover:bg-primary/90"
+                          >
+                            <Search className="w-4 h-4" />
+                          </button>
+                        </div>
+                        {(config._top10SearchResults || []).length > 0 && (
+                          <div className="mt-2 max-h-48 overflow-y-auto border border-border rounded-lg">
+                            {(config._top10SearchResults || []).map((c: Content) => {
+                              const manualIds: string[] = config.top10?.manualIds || [];
+                              const isAdded = manualIds.includes(String(c.id));
+                              return (
+                                <div key={c.docId} className="flex items-center gap-2 p-2 hover:bg-accent text-sm border-b border-border last:border-b-0">
+                                  <img src={getImageUrl(c.poster_path)} alt={c.title} className="w-8 h-12 object-cover rounded" />
+                                  <span className="flex-1 truncate">{c.title}</span>
+                                  <button
+                                    onClick={() => {
+                                      const ids = [...manualIds];
+                                      if (isAdded) {
+                                        setConfig({ ...config, top10: { ...(config.top10 || {}), manualIds: ids.filter(id => id !== String(c.id)) } });
+                                      } else {
+                                        ids.push(String(c.id));
+                                        setConfig({ ...config, top10: { ...(config.top10 || {}), manualIds: ids } });
+                                      }
+                                    }}
+                                    className={`px-2 py-1 rounded text-xs font-medium ${isAdded ? "bg-destructive/20 text-destructive" : "bg-primary text-primary-foreground"}`}
+                                  >
+                                    {isAdded ? "Quitar" : "Agregar"}
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                      {(config.top10?.manualIds || []).length > 0 && (
+                        <div>
+                          <label className="text-xs text-muted-foreground">Contenido seleccionado manualmente:</label>
+                          <div className="flex flex-wrap gap-2 mt-1">
+                            {(config.top10?.manualIds || []).map((id: string) => {
+                              const c = contentList.find(x => String(x.id) === id);
+                              return (
+                                <div key={id} className="flex items-center gap-1.5 bg-secondary rounded-full px-3 py-1 text-xs">
+                                  <span>{c?.title || id}</span>
+                                  <button
+                                    onClick={() => setConfig({ ...config, top10: { ...(config.top10 || {}), manualIds: (config.top10?.manualIds || []).filter((x: string) => x !== id) } })}
+                                    className="text-destructive hover:text-destructive/80"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
 

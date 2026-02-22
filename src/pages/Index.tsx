@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import Hero from "@/components/home/Hero";
 import ContentCarousel from "@/components/home/ContentCarousel";
+import Top10Carousel from "@/components/home/Top10Carousel";
 import PlatformFilter from "@/components/home/PlatformFilter";
 import Navbar from "@/components/layout/Navbar";
 import { useContent, useInfiniteContent } from "@/hooks/useContent";
@@ -55,6 +56,29 @@ const Index = () => {
     return genres;
   }, [content]);
 
+  const top10Items = useMemo(() => {
+    const cfg = webConfig?.top10;
+    if (!cfg || cfg.enabled === false) return [];
+    const manualIds: string[] = cfg.manualIds || [];
+    
+    // Start with manually selected items
+    const manual = manualIds
+      .map(id => content.find(c => String(c.id) === id))
+      .filter(Boolean) as typeof content;
+    
+    if (!cfg.random && manual.length > 0) return manual.slice(0, 10);
+    
+    // Fill remaining slots with random items
+    const remaining = 10 - manual.length;
+    if (remaining <= 0) return manual.slice(0, 10);
+    
+    const manualIdSet = new Set(manualIds);
+    const others = content.filter(c => !manualIdSet.has(String(c.id)));
+    const randomFill = [...others].sort(() => 0.5 - Math.random()).slice(0, remaining);
+    
+    return [...manual, ...randomFill];
+  }, [content, webConfig?.top10]);
+
   const sections = webConfig?.homepageSections || { enEstreno: 20, recienAgregado: 20, peliculasPopulares: 20, seriesPopulares: 20 };
 
   const isCategoryVisible = (key: string) => {
@@ -93,6 +117,7 @@ const Index = () => {
         {isCategoryVisible("enEstreno") && enEstreno.length > 0 && <ContentCarousel title="En Estreno/Emisión" items={enEstreno.slice(0, sections.enEstreno)} />}
         {isCategoryVisible("recienAgregado") && recienAgregado.length > 0 && <ContentCarousel title="Recién Agregado" items={recienAgregado.slice(0, sections.recienAgregado)} />}
         {isCategoryVisible("peliculas") && movies.length > 0 && <ContentCarousel title="Películas Populares" items={movies.slice(0, sections.peliculasPopulares)} viewAllLink="/category/movies" />}
+        {top10Items.length > 0 && <Top10Carousel title={webConfig?.top10?.title || "Top 10 Más Vistos"} items={top10Items} />}
         {isCategoryVisible("series") && series.length > 0 && <ContentCarousel title="Series Populares" items={series.slice(0, sections.seriesPopulares)} viewAllLink="/category/series" />}
         {Array.from(genreGroups.entries())
           .filter(([genre]) => isCategoryVisible(genre.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "")))
