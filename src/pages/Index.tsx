@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useMemo, useRef } from "react";
 import Hero from "@/components/home/Hero";
 import ContentCarousel from "@/components/home/ContentCarousel";
 import Top10Carousel from "@/components/home/Top10Carousel";
@@ -7,6 +7,27 @@ import Navbar from "@/components/layout/Navbar";
 import { useContent, useInfiniteContent } from "@/hooks/useContent";
 import { getGenreName } from "@/lib/genres";
 import { useWebConfig } from "@/hooks/useWebConfig";
+
+// Seeded random for session-stable shuffling
+function seededShuffle<T>(arr: T[], seed: number): T[] {
+  const copy = [...arr];
+  let s = seed;
+  for (let i = copy.length - 1; i > 0; i--) {
+    s = (s * 16807 + 0) % 2147483647;
+    const j = s % (i + 1);
+    [copy[i], copy[j]] = [copy[j], copy[i]];
+  }
+  return copy;
+}
+
+function getSessionSeed(): number {
+  const key = "session_shuffle_seed";
+  const stored = sessionStorage.getItem(key);
+  if (stored) return Number(stored);
+  const seed = Math.floor(Math.random() * 2147483646) + 1;
+  sessionStorage.setItem(key, String(seed));
+  return seed;
+}
 
 const Index = () => {
   const { 
@@ -19,29 +40,35 @@ const Index = () => {
 
   const loading = loadingAll && loadingInfinite;
 
+  const sessionSeed = useMemo(() => getSessionSeed(), []);
+
   const heroContent = useMemo(() => {
     if (content.length === 0) return null;
     const withBackdrop = content.filter((c) => c.backdrop_path);
     return withBackdrop.length > 0
-      ? withBackdrop[Math.floor(Math.random() * withBackdrop.length)]
+      ? seededShuffle(withBackdrop, sessionSeed)[0]
       : content[0];
-  }, [content]);
+  }, [content, sessionSeed]);
 
-  const movies = useMemo(() => content.filter((c) => c.media_type === "movie"), [content]);
-  const series = useMemo(() => content.filter((c) => c.media_type === "tv"), [content]);
+  const movies = useMemo(() => seededShuffle(content.filter((c) => c.media_type === "movie"), sessionSeed), [content, sessionSeed]);
+  const series = useMemo(() => seededShuffle(content.filter((c) => c.media_type === "tv"), sessionSeed + 1), [content, sessionSeed]);
 
   const enEstreno = useMemo(
-    () => content
-      .filter((c) => c.display_options?.home_sections?.includes("estreno"))
-      .sort((a, b) => (b.release_date || "").localeCompare(a.release_date || "")),
-    [content]
+    () => seededShuffle(
+      content.filter((c) => c.display_options?.home_sections?.includes("estreno"))
+        .sort((a, b) => (b.release_date || "").localeCompare(a.release_date || "")),
+      sessionSeed + 2
+    ),
+    [content, sessionSeed]
   );
 
   const recienAgregado = useMemo(
-    () => content
-      .filter((c) => c.display_options?.home_sections?.includes("agregado"))
-      .sort((a, b) => (b.imported_at?.seconds || 0) - (a.imported_at?.seconds || 0)),
-    [content]
+    () => seededShuffle(
+      content.filter((c) => c.display_options?.home_sections?.includes("agregado"))
+        .sort((a, b) => (b.imported_at?.seconds || 0) - (a.imported_at?.seconds || 0)),
+      sessionSeed + 3
+    ),
+    [content, sessionSeed]
   );
 
   const genreGroups = useMemo(() => {
@@ -53,31 +80,56 @@ const Index = () => {
         genres.get(name)!.push(c);
       });
     });
+    // Shuffle each genre group
+    let offset = 4;
+    for (const [key, items] of genres) {
+      genres.set(key, seededShuffle(items, sessionSeed + offset));
+      offset++;
+    }
     return genres;
-  }, [content]);
+  }, [content, sessionSeed]);
 
   const top10Items = useMemo(() => {
     const cfg = webConfig?.top10;
     if (!cfg || cfg.enabled === false) return [];
     const manualIds: string[] = cfg.manualIds || [];
-    
-    // Start with manually selected items
+
+    // Check sessionStorage for cached top10
+    const cacheKey = "session_top10_ids";
+    const cached = sessionStorage.getItem(cacheKey);
+    if (cached) {
+      try {
+        const ids: string[] = JSON.parse(cached);
+        const items = ids.map(id => content.find(c => String(c.id) === id || c.docId === id)).filter(Boolean) as typeof content;
+        if (items.length > 0) return items;
+      } catch {}
+    }
+
+    // Build fresh top10
     const manual = manualIds
       .map(id => content.find(c => String(c.id) === id))
       .filter(Boolean) as typeof content;
-    
-    if (!cfg.random && manual.length > 0) return manual.slice(0, 10);
-    
-    // Fill remaining slots with random items
+
+    if (!cfg.random && manual.length > 0) {
+      const result = manual.slice(0, 10);
+      sessionStorage.setItem(cacheKey, JSON.stringify(result.map(c => String(c.id))));
+      return result;
+    }
+
     const remaining = 10 - manual.length;
-    if (remaining <= 0) return manual.slice(0, 10);
-    
+    if (remaining <= 0) {
+      const result = manual.slice(0, 10);
+      sessionStorage.setItem(cacheKey, JSON.stringify(result.map(c => String(c.id))));
+      return result;
+    }
+
     const manualIdSet = new Set(manualIds);
     const others = content.filter(c => !manualIdSet.has(String(c.id)));
-    const randomFill = [...others].sort(() => 0.5 - Math.random()).slice(0, remaining);
-    
-    return [...manual, ...randomFill];
-  }, [content, webConfig?.top10]);
+    const randomFill = seededShuffle(others, sessionSeed + 100).slice(0, remaining);
+    const result = [...manual, ...randomFill];
+    sessionStorage.setItem(cacheKey, JSON.stringify(result.map(c => String(c.id))));
+    return result;
+  }, [content, webConfig?.top10, sessionSeed]);
 
   const sections = webConfig?.homepageSections || { enEstreno: 20, recienAgregado: 20, peliculasPopulares: 20, seriesPopulares: 20 };
 
