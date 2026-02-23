@@ -406,6 +406,7 @@ const AdminPage = () => {
   const [lastUserDoc, setLastUserDoc] = useState<any>(null);
   const [hasMoreUsers, setHasMoreUsers] = useState(true);
   const [userSearch, setUserSearch] = useState("");
+  const [userStatusFilter, setUserStatusFilter] = useState<"all" | "online" | "offline">("all");
   const [msgToUser, setMsgToUser] = useState<string | null>(null);
   const [msgToAll, setMsgToAll] = useState(false);
   const [adminMsg, setAdminMsg] = useState("");
@@ -523,10 +524,15 @@ const AdminPage = () => {
     );
   }, [contentList, contentSearch]);
 
-  const filteredUsers = useMemo(() => users.filter(u =>
-    (u.name || "").toLowerCase().includes(userSearch.toLowerCase()) ||
-    (u.email || "").toLowerCase().includes(userSearch.toLowerCase())
-  ), [users, userSearch]);
+  const filteredUsers = useMemo(() => users.filter(u => {
+    const matchesSearch = (u.name || "").toLowerCase().includes(userSearch.toLowerCase()) ||
+      (u.email || "").toLowerCase().includes(userSearch.toLowerCase());
+    if (!matchesSearch) return false;
+    if (userStatusFilter === "all") return true;
+    const ls = u.lastSeen?.toDate?.();
+    const isOnline = ls && (Date.now() - ls.getTime()) < 5 * 60 * 1000;
+    return userStatusFilter === "online" ? isOnline : !isOnline;
+  }), [users, userSearch, userStatusFilter]);
 
   const { displayed: displayedContent, sentinelRef: contentSentinel, isLoadingMore: loadingContent } = useInfiniteScroll(
     filteredContent, 
@@ -878,11 +884,22 @@ const AdminPage = () => {
                       className={inputCls + " pl-9"}
                     />
                   </div>
+                  <div className="flex items-center gap-1">
+                    {(["all", "online", "offline"] as const).map(f => (
+                      <button
+                        key={f}
+                        onClick={() => setUserStatusFilter(f)}
+                        className={`text-xs px-2.5 py-1 rounded-full transition-colors ${userStatusFilter === f ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground hover:bg-accent"}`}
+                      >
+                        {f === "all" ? "Todos" : f === "online" ? "🟢 En línea" : "⚫ Offline"}
+                      </button>
+                    ))}
+                  </div>
                   <span className="text-sm text-muted-foreground whitespace-nowrap">
-                    {filteredUsers.filter(u => {
+                    {users.filter(u => {
                       const ls = u.lastSeen?.toDate?.();
                       return ls && (Date.now() - ls.getTime()) < 5 * 60 * 1000;
-                    }).length} en línea · {filteredUsers.length} usuarios
+                    }).length} en línea · {users.length} usuarios
                   </span>
                 </div>
 
