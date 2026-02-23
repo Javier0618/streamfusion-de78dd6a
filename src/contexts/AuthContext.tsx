@@ -7,6 +7,8 @@ import {
   User,
 } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { doc, setDoc, serverTimestamp } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 const ADMIN_EMAIL = "javiervelasquez0618@gmail.com";
 
@@ -25,6 +27,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Track auth state
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
       setUser(u);
@@ -32,6 +35,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
     return unsub;
   }, []);
+
+  // Track online presence
+  useEffect(() => {
+    if (!user) return;
+    const updatePresence = () => {
+      setDoc(doc(db, "users", user.uid), { lastSeen: serverTimestamp() }, { merge: true }).catch(() => {});
+    };
+    updatePresence();
+    const interval = setInterval(updatePresence, 60_000); // every minute
+    return () => clearInterval(interval);
+  }, [user]);
 
   const login = async (email: string, password: string) => {
     await signInWithEmailAndPassword(auth, email, password);

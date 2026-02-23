@@ -878,7 +878,12 @@ const AdminPage = () => {
                       className={inputCls + " pl-9"}
                     />
                   </div>
-                  <span className="text-sm text-muted-foreground whitespace-nowrap">{filteredUsers.length} usuarios</span>
+                  <span className="text-sm text-muted-foreground whitespace-nowrap">
+                    {filteredUsers.filter(u => {
+                      const ls = u.lastSeen?.toDate?.();
+                      return ls && (Date.now() - ls.getTime()) < 5 * 60 * 1000;
+                    }).length} en línea · {filteredUsers.length} usuarios
+                  </span>
                 </div>
 
                 <div className="space-y-2">
@@ -889,7 +894,16 @@ const AdminPage = () => {
                           <p className="font-medium text-sm">{u.name || "Sin nombre"}</p>
                           <p className="text-xs text-muted-foreground">{u.email}</p>
                           <div className="flex items-center gap-2 mt-1">
-                            <span className="text-xs px-1.5 py-0.5 bg-primary/10 text-primary rounded">Conectado</span>
+                            {(() => {
+                              const ls = u.lastSeen?.toDate?.();
+                              const isOnline = ls && (Date.now() - ls.getTime()) < 5 * 60 * 1000;
+                              return (
+                                <span className={`text-xs px-1.5 py-0.5 rounded flex items-center gap-1 ${isOnline ? "bg-green-500/10 text-green-500" : "bg-muted text-muted-foreground"}`}>
+                                  <span className={`w-2 h-2 rounded-full ${isOnline ? "bg-green-500 animate-pulse" : "bg-muted-foreground/50"}`} />
+                                  {isOnline ? "En línea" : ls ? `Visto ${ls.toLocaleDateString("es")} ${ls.toLocaleTimeString("es", { hour: "2-digit", minute: "2-digit" })}` : "Sin actividad"}
+                                </span>
+                              );
+                            })()}
                             {u.registeredAt && (
                               <span className="text-xs text-muted-foreground">
                                 Registro: {u.registeredAt?.toDate?.()?.toLocaleDateString("es") || "N/A"}
