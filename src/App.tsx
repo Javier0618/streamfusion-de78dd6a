@@ -21,6 +21,7 @@ import DoramasPage from "./pages/DoramasPage";
 import NotFound from "./pages/NotFound";
 import { FaAndroid } from "react-icons/fa";
 import AnalyticsTracker from "@/components/AnalyticsTracker";
+import ScrollToTop from "@/components/ScrollToTop";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +32,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <ScrollToTop />
           <AnalyticsTracker />
           <div className="min-h-screen">
             <Routes>
