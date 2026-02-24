@@ -303,25 +303,64 @@ function ImportModal({ item, onClose, onImported, adminEmail }: ImportModalProps
   );
 }
 
-// ─── Edit Display Options Modal ───────────────────────────────────────────────
+// ─── Edit Content Modal (Options + URLs) ─────────────────────────────────────
 function EditOptionsModal({ content, onClose, onSaved }: { content: Content; onClose: () => void; onSaved: () => void }) {
   const { toast } = useToast();
+  const [editTab, setEditTab] = useState<"urls" | "options">("urls");
   const [mainSections, setMainSections] = useState<string[]>(content.display_options?.main_sections || []);
   const [homeSections, setHomeSections] = useState<string[]>(content.display_options?.home_sections || []);
   const [platforms, setPlatforms] = useState<string[]>(content.display_options?.platforms || []);
   const [saving, setSaving] = useState(false);
 
+  // URLs state
+  const [movieUrl, setMovieUrl] = useState(content.video_url || "");
+  const [episodeUrls, setEpisodeUrls] = useState<Record<string, string>>(() => {
+    const urls: Record<string, string> = {};
+    if (content.seasons) {
+      Object.entries(content.seasons).forEach(([sKey, season]) => {
+        Object.entries(season.episodes || {}).forEach(([eKey, ep]) => {
+          urls[`s${season.season_number}e${ep.episode_number}`] = ep.video_url || "";
+        });
+      });
+    }
+    return urls;
+  });
+  const [expandedSeason, setExpandedSeason] = useState<number | null>(null);
+
   const toggle = (arr: string[], setArr: (v: string[]) => void, val: string) =>
     setArr(arr.includes(val) ? arr.filter(v => v !== val) : [...arr, val]);
+
+  const handleEpUrl = (seasonNum: number, epNum: number, value: string) => {
+    setEpisodeUrls(prev => ({ ...prev, [`s${seasonNum}e${epNum}`]: value }));
+  };
 
   const handleSave = async () => {
     if (!content.docId) return;
     setSaving(true);
     try {
-      await updateContent(content.docId, {
+      const updateData: any = {
         display_options: { main_sections: mainSections, home_sections: homeSections, platforms },
-      } as any);
-      toast({ title: "Guardado", description: "Opciones actualizadas" });
+      };
+
+      if (content.media_type === "movie") {
+        updateData.video_url = movieUrl;
+      } else if (content.seasons) {
+        const updatedSeasons: any = {};
+        Object.entries(content.seasons).forEach(([sKey, season]) => {
+          const updatedEps: any = {};
+          Object.entries(season.episodes || {}).forEach(([eKey, ep]) => {
+            updatedEps[eKey] = {
+              ...ep,
+              video_url: episodeUrls[`s${season.season_number}e${ep.episode_number}`] || ep.video_url || "",
+            };
+          });
+          updatedSeasons[sKey] = { ...season, episodes: updatedEps };
+        });
+        updateData.seasons = updatedSeasons;
+      }
+
+      await updateContent(content.docId, updateData);
+      toast({ title: "Guardado", description: "Contenido actualizado correctamente" });
       onSaved();
       onClose();
     } catch {
@@ -331,49 +370,121 @@ function EditOptionsModal({ content, onClose, onSaved }: { content: Content; onC
     }
   };
 
+  const inputCls = "w-full px-3 py-2 bg-secondary text-foreground rounded-md border border-border focus:outline-none focus:ring-2 focus:ring-primary text-sm";
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4" onClick={onClose}>
-      <div className="bg-card rounded-xl border border-border w-full max-w-md p-6 space-y-4" onClick={e => e.stopPropagation()}>
-        <div className="flex justify-between items-center">
-          <h3 className="font-bold">Editar opciones: {content.title}</h3>
+      <div className="bg-card rounded-xl border border-border w-full max-w-2xl max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+        <div className="flex items-center justify-between p-4 border-b border-border sticky top-0 bg-card z-10">
+          <h3 className="font-bold text-sm">Editar: {content.title}</h3>
           <button onClick={onClose}><X className="w-5 h-5" /></button>
         </div>
-        <div>
-          <p className="text-xs text-muted-foreground mb-2">Secciones Principales:</p>
-          <div className="grid grid-cols-2 gap-2">
-            {MAIN_SECTIONS.map(s => (
-              <label key={s.id} className="flex items-center gap-2 text-sm cursor-pointer">
-                <input type="checkbox" checked={mainSections.includes(s.id)} onChange={() => toggle(mainSections, setMainSections, s.id)} />
-                {s.label}
-              </label>
-            ))}
-          </div>
+
+        {/* Tabs */}
+        <div className="flex border-b border-border">
+          <button
+            onClick={() => setEditTab("urls")}
+            className={`flex-1 py-2.5 text-sm font-medium transition-colors ${editTab === "urls" ? "border-b-2 border-primary text-primary" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            <Film className="w-4 h-4 inline mr-1.5" />URLs de Video
+          </button>
+          <button
+            onClick={() => setEditTab("options")}
+            className={`flex-1 py-2.5 text-sm font-medium transition-colors ${editTab === "options" ? "border-b-2 border-primary text-primary" : "text-muted-foreground hover:text-foreground"}`}
+          >
+            <Settings className="w-4 h-4 inline mr-1.5" />Opciones
+          </button>
         </div>
-        <div>
-          <p className="text-xs text-muted-foreground mb-2">Secciones de Inicio:</p>
-          <div className="grid grid-cols-2 gap-2">
-            {HOME_SECTIONS.map(s => (
-              <label key={s.id} className="flex items-center gap-2 text-sm cursor-pointer">
-                <input type="checkbox" checked={homeSections.includes(s.id)} onChange={() => toggle(homeSections, setHomeSections, s.id)} />
-                {s.label}
-              </label>
-            ))}
-          </div>
+
+        <div className="p-4 space-y-4">
+          {editTab === "urls" && (
+            <>
+              {content.media_type === "movie" ? (
+                <div>
+                  <label className="text-xs text-muted-foreground">URL del Video</label>
+                  <input value={movieUrl} onChange={e => setMovieUrl(e.target.value)} className={inputCls} placeholder="https://..." />
+                </div>
+              ) : content.seasons ? (
+                <div className="space-y-2">
+                  {Object.entries(content.seasons)
+                    .sort(([, a], [, b]) => a.season_number - b.season_number)
+                    .map(([sKey, season]) => (
+                    <div key={sKey} className="border border-border rounded-lg overflow-hidden">
+                      <button
+                        onClick={() => setExpandedSeason(expandedSeason === season.season_number ? null : season.season_number)}
+                        className="w-full flex items-center justify-between px-4 py-3 bg-secondary hover:bg-accent text-sm font-medium"
+                      >
+                        <span>Temporada {season.season_number} · {Object.keys(season.episodes || {}).length} episodios</span>
+                        {expandedSeason === season.season_number ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                      </button>
+                      {expandedSeason === season.season_number && (
+                        <div className="p-3 space-y-2 max-h-64 overflow-y-auto">
+                          {Object.entries(season.episodes || {})
+                            .sort(([, a], [, b]) => a.episode_number - b.episode_number)
+                            .map(([eKey, ep]) => (
+                            <div key={eKey} className="space-y-1">
+                              <label className="text-xs text-muted-foreground">Ep. {ep.episode_number}: {ep.name}</label>
+                              <input
+                                value={episodeUrls[`s${season.season_number}e${ep.episode_number}`] || ""}
+                                onChange={e => handleEpUrl(season.season_number, ep.episode_number, e.target.value)}
+                                className={inputCls}
+                                placeholder="https://..."
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">Esta serie no tiene temporadas importadas.</p>
+              )}
+            </>
+          )}
+
+          {editTab === "options" && (
+            <>
+              <div>
+                <p className="text-xs text-muted-foreground mb-2">Secciones Principales:</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {MAIN_SECTIONS.map(s => (
+                    <label key={s.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                      <input type="checkbox" checked={mainSections.includes(s.id)} onChange={() => toggle(mainSections, setMainSections, s.id)} />
+                      {s.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-2">Secciones de Inicio:</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {HOME_SECTIONS.map(s => (
+                    <label key={s.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                      <input type="checkbox" checked={homeSections.includes(s.id)} onChange={() => toggle(homeSections, setHomeSections, s.id)} />
+                      {s.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground mb-2">Plataformas:</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {PLATFORMS.map(p => (
+                    <label key={p.id} className="flex items-center gap-2 text-sm cursor-pointer">
+                      <input type="checkbox" checked={platforms.includes(p.id)} onChange={() => toggle(platforms, setPlatforms, p.id)} />
+                      {p.label}
+                    </label>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+
+          <button onClick={handleSave} disabled={saving} className="w-full py-2 bg-primary text-primary-foreground rounded-md text-sm font-semibold hover:bg-primary/90 disabled:opacity-50">
+            {saving ? "Guardando..." : "Guardar Todo"}
+          </button>
         </div>
-        <div>
-          <p className="text-xs text-muted-foreground mb-2">Plataformas:</p>
-          <div className="grid grid-cols-2 gap-2">
-            {PLATFORMS.map(p => (
-              <label key={p.id} className="flex items-center gap-2 text-sm cursor-pointer">
-                <input type="checkbox" checked={platforms.includes(p.id)} onChange={() => toggle(platforms, setPlatforms, p.id)} />
-                {p.label}
-              </label>
-            ))}
-          </div>
-        </div>
-        <button onClick={handleSave} disabled={saving} className="w-full py-2 bg-primary text-primary-foreground rounded-md text-sm font-semibold hover:bg-primary/90 disabled:opacity-50">
-          {saving ? "Guardando..." : "Guardar"}
-        </button>
       </div>
     </div>
   );
